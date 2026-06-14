@@ -9,147 +9,133 @@ URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 user_data = {}
 
+# -------------------------
+# SEND MESSAGE
+# -------------------------
 def send(chat_id, text):
     requests.post(f"{URL}/sendMessage", json={
         "chat_id": chat_id,
         "text": text
     })
 
+# -------------------------
+# VALIDATION HELPERS
+# -------------------------
+def is_valid_age(text):
+    return text.isdigit()
 
-def build_workout(a):
+def is_valid_email(text):
+    return "@" in text and "." in text
 
-    obiettivo = a["obiettivo"]
-    livello = a["livello"]
-    split = a["split"]
-    eta = a["eta"]
-    att = a["attrezzatura"]
+def normalize(text):
+    return text.lower().strip()
 
-    base = ""
+# -------------------------
+# WORKOUT GENERATOR
+# -------------------------
+def generate_workout(data):
 
-    # ---------------- MASSA ----------------
-    if "massa" in obiettivo:
+    age = int(data["age"])
+    level = data["level"]
+    equipment = data["equipment"]
+    goal = data["goal"]
+    focus = data["focus"]
+    days = data["days"]
+    days_list = data["days_list"]
 
-        if livello == "mai allenato":
-            if split == "full body":
-                base = """
-FULL BODY A
-- Squat 3x10
-- Push-up 3x8
-- Rematore 3x10
-- Plank 3x20s
+    # INTENSITY RULES
+    if age < 18:
+        intensity = "giovane"
+    elif age <= 35:
+        intensity = "alto"
+    else:
+        intensity = "protetto"
 
-FULL BODY B
-- Affondi 3x10
-- Push-up inclinati 3x8
-- Crunch 3x12
-- Superman 3x12
-"""
+    text = f"🏋️ PROGRAMMA PERSONALIZZATO\n\n"
+    text += f"🎯 Obiettivo: {goal}\n📊 Livello: {level}\n🏠 Attrezzatura: {equipment}\n🔥 Intensità: {intensity}\n\n"
 
-        elif livello == "base":
-            if split == "upper body":
-                base = """
-UPPER A
-- Panca / push-up 4x10
-- Rematore 4x10
-- Shoulder press 3x10
-- Curl 3x12
+    # FOR EACH DAY
+    for d in days_list:
 
-UPPER B
-- Dip 3x max
-- Lat machine 4x10
-- Addome 3x15
-"""
+        text += f"\n📅 {d.upper()}\n"
 
-            elif split == "lower body":
-                base = """
-LOWER A
+        # SAFETY ADAPTATION
+        if intensity == "protetto":
+            safety = "⚠️ Esercizi controllati, niente impatti pesanti\n"
+        elif intensity == "giovane":
+            safety = "💪 Energia alta, focus tecnica\n"
+        else:
+            safety = "🔥 Intensità massima controllata\n"
+
+        text += safety
+
+        # FULL BODY
+        if focus == "full body":
+
+            if goal == "massa":
+                text += """
 - Squat 4x10
+- Panca / Push-up 4x10
+- Rematore 4x10
 - Affondi 3x12
-- Leg press 4x10
-- Calf raises 4x15
-
-LOWER B
-- Stacco rumeno 3x10
-- Glute bridge 3x12
-- Leg curl 3x12
+- Plank 3x40s
 """
 
             else:
-                base = """
-FULL BODY A
-- Squat 4x10
-- Panca 4x10
-- Lat machine 4x10
-- Plank 40s
-
-FULL BODY B
-- Squat jump
-- Rematore
-- Affondi
-- Addome
-"""
-
-    # ---------------- DIMAGRIMENTO ----------------
-    elif "dimagr" in obiettivo:
-
-        if livello == "mai allenato":
-            base = """
-FULL BODY A
-- Camminata 10 min
-- Squat 3x12
-- Push-up 3x8
-- Plank 20s
-
-FULL BODY B
-- Jumping jack
-- Crunch
-- Mountain climber lento
-- Step sul posto
-"""
-
-        elif livello == "base":
-            base = """
-HIIT A
-- Burpees 3x10
-- Squat 3x12
+                text += """
+- Burpees 3x12
+- Squat jump 3x12
 - Push-up 3x10
+- Mountain climber 30s
+"""
+
+        # UPPER BODY
+        elif focus == "upper body":
+
+            if goal == "massa":
+                text += """
+- Panca / Push-up 4x10
+- Rematore 4x10
+- Shoulder press 3x10
+- Curl bicipiti 3x12
+- Addome 3x15
+"""
+            else:
+                text += """
+- Push-up 4x max
+- Dip 3x10
+- Crunch 3x15
 - Plank 40s
-
-HIIT B
-- Circuito 5 giri
-- Jump squat
-- Mountain climber
-- Crunch
 """
 
-        else:
-            base = """
-HIIT AVANZATO A
-- Burpees 4x12
-- Squat jump
-- Push-up max
-- Plank 1 min
+        # LOWER BODY
+        elif focus == "lower body":
 
-HIIT B
-- Tabata training
-- Sprint
-- Circuito full body
+            if goal == "massa":
+                text += """
+- Squat 4x10
+- Affondi 4x10
+- Leg press / bodyweight 4x12
+- Glute bridge 3x15
+- Calf raises 4x15
+"""
+            else:
+                text += """
+- Squat jump 3x12
+- Affondi 3x12
+- Step-up 3x12
+- Wall sit 30s
 """
 
-    # ETA MODIFIER
-    if "35" in eta:
-        base += "\n⚠️ Consiglio: riduci impatto e aumenta recuperi"
-    if "18" in eta and "sotto" in eta:
-        base += "\n⚠️ Focus tecnica, niente carichi pesanti"
+        text += "\n----------------------\n"
 
-    return base
+    text += "\n💡 Consiglio: aumenta gradualmente intensità ogni settimana."
 
+    return text
 
-@app.route("/")
-def home():
-    return "Bot attivo"
-
-
+# -------------------------
+# WEBHOOK
+# -------------------------
 @app.route("/webhook", methods=["POST"])
 def webhook():
 
@@ -160,7 +146,7 @@ def webhook():
 
     msg = data["message"]
     chat_id = msg["chat"]["id"]
-    text = msg.get("text", "").lower()
+    text = normalize(msg.get("text", ""))
 
     if chat_id not in user_data:
         user_data[chat_id] = {"step": 0, "data": {}}
@@ -170,46 +156,99 @@ def webhook():
     # START
     if text == "/start":
         u["step"] = 1
-        send(chat_id, "💪 Obiettivo? (massa / dimagrimento)")
+        send(chat_id, "👤 Scrivi Nome e Cognome:")
         return "ok"
 
-    # STEP 1
+    # STEP 1 NAME
     if u["step"] == 1:
-        u["data"]["obiettivo"] = text
+        u["data"]["name"] = text
         u["step"] = 2
+        send(chat_id, "📧 Inserisci email:")
+        return "ok"
+
+    # STEP 2 EMAIL
+    if u["step"] == 2:
+        if not is_valid_email(text):
+            send(chat_id, "❌ Email non valida, riprova:")
+            return "ok"
+
+        u["data"]["email"] = text
+        u["step"] = 3
+        send(chat_id, "🎂 Età?")
+        return "ok"
+
+    # STEP 3 AGE
+    if u["step"] == 3:
+        if not is_valid_age(text):
+            send(chat_id, "❌ Inserisci un numero valido:")
+            return "ok"
+
+        u["data"]["age"] = text
+        u["step"] = 4
         send(chat_id, "📊 Livello? (mai allenato / base / avanzato / esperto)")
         return "ok"
 
-    # STEP 2
-    if u["step"] == 2:
-        u["data"]["livello"] = text
-        u["step"] = 3
-        send(chat_id, "🏋️ Split? (full body / upper body / lower body)")
-        return "ok"
-
-    # STEP 3
-    if u["step"] == 3:
-        u["data"]["split"] = text
-        u["step"] = 4
-        send(chat_id, "🎂 Età? (sotto 18 / sopra 18 / sopra 35)")
-        return "ok"
-
-    # STEP 4
+    # STEP 4 LEVEL
     if u["step"] == 4:
-        u["data"]["eta"] = text
+        u["data"]["level"] = text
         u["step"] = 5
         send(chat_id, "🏠 Attrezzatura? (corpo libero / casa / palestra)")
         return "ok"
 
-    # STEP 5 → GENERA
+    # STEP 5 EQUIPMENT
     if u["step"] == 5:
-        u["data"]["attrezzatura"] = text
+        if "casa" in text:
+            send(chat_id, "🏠 Perfetto, userai manubri e barra trazioni se disponibili")
+        u["data"]["equipment"] = text
+        u["step"] = 6
+        send(chat_id, "🎯 Obiettivo? (massa / dimagrimento)")
+        return "ok"
 
-        workout = build_workout(u["data"])
+    # STEP 6 GOAL
+    if u["step"] == 6:
+        u["data"]["goal"] = text
+        u["step"] = 7
+        send(chat_id, "🎯 Focus? (upper body / lower body / full body)")
+        return "ok"
 
-        send(chat_id, f"🏋️ Ecco la tua scheda:\n\n{workout}")
+    # STEP 7 FOCUS
+    if u["step"] == 7:
+        u["data"]["focus"] = text
+        u["step"] = 8
+        send(chat_id, "📅 Quanti giorni a settimana vuoi allenarti?")
+        return "ok"
+
+    # STEP 8 DAYS NUMBER
+    if u["step"] == 8:
+
+        if not text.isdigit():
+            send(chat_id, "❌ Scrivi un numero valido (es: 3, 4, 5)")
+            return "ok"
+
+        u["data"]["days"] = int(text)
+        u["step"] = 9
+        send(chat_id, "📅 Scrivi i giorni (es: lunedi, martedi, mercoledi):")
+        return "ok"
+
+    # STEP 9 DAYS LIST
+    if u["step"] == 9:
+
+        days_list = text.split(",")
+        u["data"]["days_list"] = [d.strip() for d in days_list]
+
+        workout = generate_workout(u["data"])
+
+        send(chat_id, workout)
 
         user_data[chat_id] = {"step": 0, "data": {}}
         return "ok"
 
     return "ok"
+
+
+# -------------------------
+# HOME
+# -------------------------
+@app.route("/")
+def home():
+    return "Fitness Bot Attivo"
