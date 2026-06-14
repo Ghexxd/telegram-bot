@@ -31,20 +31,94 @@ def valid_age(a): return 10 <= a <= 99
 def valid_weight(w): return 40 <= w <= 300
 
 # =========================
-# DAYS
+# VALID DAYS
 # =========================
-VALID_DAYS = ["lunedi","martedi","mercoledi","giovedi","venerdi","sabato","domenica"]
+VALID_DAYS = [
+    "lunedi","martedi","mercoledi",
+    "giovedi","venerdi","sabato","domenica"
+]
 
 # =========================
-# WORKOUT ENGINE (NO RANDOM)
+# EXERCISE LIBRARY (COMPLETA)
 # =========================
 
+EX = {
+
+"PUSH": [
+    "panca piana 4x8-10",
+    "panca inclinata 3x10",
+    "shoulder press 3x10",
+    "alzate laterali 3x12",
+    "dip 3x max"
+],
+
+"PULL": [
+    "lat machine 4x10",
+    "rematore 4x10",
+    "curl bicipiti 3x12",
+    "face pull 3x15"
+],
+
+"LEGS": [
+    "squat 4x10",
+    "affondi 3x12",
+    "leg press 4x10",
+    "stacco rumeno 3x10",
+    "calf raises 4x15"
+],
+
+"UPPER": [
+    "panca 4x10",
+    "lat machine 4x10",
+    "shoulder press 3x10",
+    "curl + tricipiti 3x12"
+],
+
+"LOWER": [
+    "squat 4x10",
+    "leg press 4x10",
+    "stacco rumeno 3x10",
+    "calf raises 4x15"
+],
+
+"FULL": [
+    "squat 4x10",
+    "panca 4x10",
+    "rematore 4x10",
+    "plank 3x45s"
+],
+
+"HIIT": [
+    "burpees 12x",
+    "squat jump 15x",
+    "mountain climber 30s",
+    "jumping jack 1 min"
+],
+
+"CARDIO": [
+    "corsa 10-20 min",
+    "corda 5 min",
+    "jumping jack 1 min"
+],
+
+"CORE": [
+    "plank",
+    "crunch",
+    "leg raise",
+    "ab twist"
+]
+
+}
+
+# =========================
+# SPLIT ENGINE (LOGICO)
+# =========================
 def get_split(goal, days):
 
     if goal == "massa":
 
         if days == 1:
-            return ["FULL BODY"]
+            return ["FULL"]
 
         if days == 2:
             return ["UPPER", "LOWER"]
@@ -53,122 +127,39 @@ def get_split(goal, days):
             return ["PUSH", "PULL", "LEGS"]
 
         if days == 4:
-            return ["PUSH", "PULL", "LEGS", "FULL BODY"]
+            return ["PUSH", "PULL", "LEGS", "FULL"]
 
         if days == 5:
             return ["PUSH", "PULL", "LEGS", "UPPER", "LOWER"]
 
-        return ["PUSH", "PULL", "LEGS", "UPPER", "LOWER", "FULL BODY"]
+        return ["PUSH", "PULL", "LEGS", "UPPER", "LOWER", "FULL"]
 
     else:
 
         if days == 1:
-            return ["HIIT FULL BODY"]
+            return ["HIIT"]
 
         if days == 2:
             return ["HIIT", "CARDIO"]
 
         if days == 3:
-            return ["HIIT", "CIRCUIT", "CARDIO"]
+            return ["HIIT", "CORE", "CARDIO"]
 
         if days == 4:
-            return ["HIIT", "UPPER TONING", "LOWER TONING", "CARDIO"]
+            return ["HIIT", "UPPER", "LOWER", "CARDIO"]
 
-        return ["HIIT", "CARDIO", "CIRCUIT", "CORE", "ACTIVE RECOVERY"]
-
-# =========================
-# EXERCISE POOLS (COMPLETI)
-# =========================
-
-CHEST = [
-    "panca piana", "panca inclinata", "push-up", "dip",
-    "chest press", "cable fly"
-]
-
-BACK = [
-    "lat machine", "trazioni", "rematore", "pulley",
-    "face pull"
-]
-
-LEGS = [
-    "squat", "affondi", "leg press", "stacco rumeno",
-    "leg curl", "calf raises"
-]
-
-SHOULDERS = [
-    "shoulder press", "alzate laterali", "arnold press"
-]
-
-ARMS = [
-    "curl bicipiti", "hammer curl", "pushdown tricipiti", "dip tricipiti"
-]
-
-CORE = [
-    "plank", "crunch", "leg raise", "ab wheel"
-]
-
-CARDIO = [
-    "burpees", "squat jump", "jumping jack",
-    "mountain climber", "corsa", "corda"
-]
+        return ["HIIT", "CARDIO", "CORE", "ACTIVE", "RECOVERY"]
 
 # =========================
-# WORKOUT BUILDER LOGICO
+# WORKOUT BUILDER
 # =========================
+def build(day_type):
 
-def build(day_type, equipment, focus):
-
-    base = []
-
-    # PUSH
-    if day_type == "PUSH":
-        base = [CHEST[0], SHOULDERS[0], ARMS[3], SHOULDERS[1]]
-
-    # PULL
-    elif day_type == "PULL":
-        base = [BACK[0], BACK[2], ARMS[0], BACK[3]]
-
-    # LEGS
-    elif day_type == "LEGS":
-        base = [LEGS[0], LEGS[1], LEGS[2], LEGS[5]]
-
-    # FULL BODY
-    elif day_type == "FULL BODY":
-        base = [CHEST[0], BACK[0], LEGS[0], CORE[0]]
-
-    # UPPER
-    elif "UPPER" in day_type:
-        base = [CHEST[0], BACK[0], SHOULDERS[0], ARMS[0]]
-
-    # LOWER
-    elif "LOWER" in day_type:
-        base = [LEGS[0], LEGS[2], LEGS[3], LEGS[5]]
-
-    # HIIT
-    elif "HIIT" in day_type:
-        base = [CARDIO[0], CARDIO[1], CARDIO[3], CORE[0]]
-
-    # CARDIO
-    elif "CARDIO" in day_type:
-        base = [CARDIO[4], CARDIO[5], CARDIO[2], CORE[0]]
-
-    # CORE
-    elif "CORE" in day_type:
-        base = CORE
-
-    else:
-        base = ["riposo attivo"]
-
-    # ADATTAMENTO ATTREZZATURA
-    if equipment == "corpo libero":
-        base = [x for x in base if "macchina" not in x]
-
-    return base
+    return EX.get(day_type, ["riposo attivo"])
 
 # =========================
 # GENERATOR
 # =========================
-
 def generate(data):
 
     plan = get_split(data["goal"], data["days"])
@@ -187,14 +178,12 @@ def generate(data):
 
     for i in range(data["days"]):
 
-        day_name = data["days_list"][i]
-        day_type = plan[i]
+        day = data["days_list"][i]
+        type_day = plan[i]
 
-        text += f"\n📅 {day_name.upper()} — {day_type}\n"
+        text += f"\n📅 {day.upper()} — {type_day}\n"
 
-        exercises = build(day_type, data["equipment"], data["focus"])
-
-        for ex in exercises:
+        for ex in build(type_day):
             text += f"- {ex}\n"
 
         text += "\n-------------------\n"
@@ -272,7 +261,7 @@ def webhook():
 
         u["data"]["weight"] = weight
         u["step"] = 5
-        send(chat_id, "📊 livello (mai allenato / base / avanzato / esperto)")
+        send(chat_id, "📊 livello (mai/base/avanzato/esperto)")
         return "ok"
 
     # LEVEL
@@ -283,7 +272,7 @@ def webhook():
 
         u["data"]["level"] = text
         u["step"] = 6
-        send(chat_id, "🏋️ attrezzatura (corpo libero / casa / palestra)")
+        send(chat_id, "🏋️ attrezzatura (corpo libero/casa/palestra)")
         return "ok"
 
     # EQUIPMENT
@@ -305,41 +294,36 @@ def webhook():
 
         u["data"]["goal"] = text
         u["step"] = 8
-        send(chat_id, "🎯 upper body / lower body / full body")
-        return "ok"
-
-    # FOCUS
-    if u["step"] == 8:
-        if text not in ["upper body","lower body","full body"]:
-            send(chat_id, "❌ focus non valido")
-            return "ok"
-
-        u["data"]["focus"] = text
-        u["step"] = 9
         send(chat_id, "📅 giorni a settimana (1-7)")
         return "ok"
 
     # DAYS
-    if u["step"] == 9:
+    if u["step"] == 8:
         if not is_num(text):
             send(chat_id, "❌ numero non valido")
             return "ok"
 
         days = int(text)
+
         if days < 1 or days > 7:
             send(chat_id, "❌ max 7 giorni")
             return "ok"
 
         u["data"]["days"] = days
-        u["step"] = 10
+
+        if days == 1:
+            send(chat_id,
+                "⚠️ Attenzione: 1 giorno è poco per risultati ottimali.")
+
+        u["step"] = 9
         send(chat_id, "📅 scrivi i giorni (lunedi, martedi...)")
         return "ok"
 
     # DAYS LIST
-    if u["step"] == 10:
+    if u["step"] == 9:
 
         raw = text.replace(",", " ")
-        days_list = [d.strip() for d in raw.split()]
+        days_list = raw.split()
 
         for d in days_list:
             if d not in VALID_DAYS:
