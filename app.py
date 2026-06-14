@@ -10,7 +10,7 @@ URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 user_data = {}
 
 # =========================
-# SEND
+# SEND MESSAGE
 # =========================
 def send(chat_id, text):
     requests.post(f"{URL}/sendMessage", json={
@@ -30,28 +30,21 @@ def is_num(x):
 def valid_age(a): return 10 <= a <= 99
 def valid_weight(w): return 40 <= w <= 300
 
-def valid_level(x):
-    return x in ["mai allenato", "base", "avanzato", "esperto"]
-
 def valid_goal(x):
     return x in ["massa", "dimagrimento"]
 
-def valid_focus(x):
-    return x in ["upper body", "lower body", "full body"]
-
 # =========================
-# WORKOUT LOGIC (NO RANDOM)
+# WORKOUT LOGIC (SENZA RANDOM)
 # =========================
-
 def get_plan(goal, days):
 
     if goal == "massa":
 
         if days == 1:
-            return ["FULL BODY (forza totale)"]
+            return ["FULL BODY"]
 
         if days == 2:
-            return ["UPPER", "LOWER"]
+            return ["UPPER BODY", "LOWER BODY"]
 
         if days == 3:
             return ["PUSH", "PULL", "LEGS"]
@@ -60,12 +53,9 @@ def get_plan(goal, days):
             return ["PUSH", "PULL", "LEGS", "FULL BODY"]
 
         if days == 5:
-            return ["PUSH", "PULL", "LEGS", "UPPER", "LOWER"]
+            return ["PUSH", "PULL", "LEGS", "UPPER BODY", "LOWER BODY"]
 
-        if days == 6:
-            return ["PUSH", "PULL", "LEGS", "PUSH", "PULL", "LEGS"]
-
-        return ["PUSH", "PULL", "LEGS", "UPPER", "LOWER", "FULL BODY", "RECOVERY"]
+        return ["PUSH", "PULL", "LEGS", "UPPER BODY", "LOWER BODY", "FULL BODY"]
 
     else:
 
@@ -73,10 +63,10 @@ def get_plan(goal, days):
             return ["HIIT FULL BODY"]
 
         if days == 2:
-            return ["HIIT + CORE", "CARDIO + CORE"]
+            return ["HIIT", "CARDIO"]
 
         if days == 3:
-            return ["FULL CIRCUIT", "HIIT", "CARDIO"]
+            return ["HIIT", "CIRCUIT", "CARDIO"]
 
         if days == 4:
             return ["HIIT", "UPPER TONING", "LOWER TONING", "CARDIO"]
@@ -85,9 +75,8 @@ def get_plan(goal, days):
 
 
 # =========================
-# EXERCISE BUILDER (LOGICAL)
+# EXERCISES (LOGICI)
 # =========================
-
 def build_workout(day_type):
 
     if day_type == "PUSH":
@@ -108,7 +97,7 @@ def build_workout(day_type):
 
     if day_type == "LEGS":
         return [
-            "squat 4x8-10",
+            "squat 4x10",
             "affondi 3x12",
             "leg press 4x10",
             "calf raises 4x15"
@@ -149,8 +138,8 @@ def build_workout(day_type):
     if "CARDIO" in day_type:
         return [
             "corsa 10-20 min",
-            "jumping jack 1 min",
             "corda 5 min",
+            "jumping jack 1 min",
             "core leggero"
         ]
 
@@ -164,11 +153,9 @@ def build_workout(day_type):
 
     return ["riposo attivo"]
 
-
 # =========================
 # GENERATOR
 # =========================
-
 def generate(data):
 
     name = data["name"]
@@ -181,18 +168,18 @@ def generate(data):
     plan = get_plan(goal, days)
 
     text = f"""
-🏋️ PIANO PERSONALIZZATO STRUTTURATO
+🏋️ PIANO PERSONALIZZATO
 
 👤 {name}
 🎯 {goal}
 ⚖️ {weight} kg
-🔥 giorni: {days}
+📅 giorni: {days}
 
 """
 
     for i in range(days):
 
-        day_name = days_list[i] if i < len(days_list) else f"Giorno {i+1}"
+        day_name = days_list[i]
         day_type = plan[i]
 
         text += f"\n📅 {day_name.upper()} — {day_type}\n"
@@ -226,66 +213,115 @@ def webhook():
 
     u = user_data[chat_id]
 
+    # START
     if text == "/start":
         u["step"] = 1
         send(chat_id, "👤 Nome e cognome:")
         return "ok"
 
+    # NAME
     if u["step"] == 1:
         u["data"]["name"] = text
         u["step"] = 2
         send(chat_id, "📧 Email:")
         return "ok"
 
+    # EMAIL
     if u["step"] == 2:
+        if "@" not in text:
+            send(chat_id, "❌ Email non valida")
+            send(chat_id, "📧 Email:")
+            return "ok"
+
         u["step"] = 3
         send(chat_id, "🎂 Età:")
         return "ok"
 
+    # AGE (FIX ANTI-SPAM)
     if u["step"] == 3:
-        if not is_num(text): return send(chat_id, "❌ numero valido")
-        if not valid_age(int(text)): return send(chat_id, "❌ età non valida")
-        u["data"]["age"] = text
+
+        if not is_num(text):
+            send(chat_id, "❌ Inserisci un numero valido")
+            send(chat_id, "🎂 Età:")
+            return "ok"
+
+        age = int(text)
+
+        if not valid_age(age):
+            send(chat_id, "❌ Età non valida, reinseriscila")
+            send(chat_id, "🎂 Età:")
+            return "ok"
+
+        u["data"]["age"] = age
         u["step"] = 4
         send(chat_id, "⚖️ Peso:")
         return "ok"
 
+    # WEIGHT (FIX SIMILE)
     if u["step"] == 4:
-        if not is_num(text): return send(chat_id, "❌ numero valido")
-        if not valid_weight(int(text)): return send(chat_id, "❌ peso non valido")
-        u["data"]["weight"] = text
+
+        if not is_num(text):
+            send(chat_id, "❌ Inserisci un numero valido")
+            send(chat_id, "⚖️ Peso:")
+            return "ok"
+
+        weight = int(text)
+
+        if not valid_age(age if False else 1) and False:
+            pass
+
+        if weight < 40 or weight > 300:
+            send(chat_id, "❌ Peso non valido, reinseriscilo")
+            send(chat_id, "⚖️ Peso:")
+            return "ok"
+
+        u["data"]["weight"] = weight
         u["step"] = 5
         send(chat_id, "🎯 massa o dimagrimento")
         return "ok"
 
+    # GOAL
     if u["step"] == 5:
-        if not valid_goal(text): return send(chat_id, "❌ risposta non valida")
+
+        if not valid_goal(text):
+            send(chat_id, "❌ Risposta non valida")
+            send(chat_id, "🎯 massa o dimagrimento")
+            return "ok"
+
         u["data"]["goal"] = text
         u["step"] = 6
         send(chat_id, "📅 giorni a settimana")
         return "ok"
 
+    # DAYS
     if u["step"] == 6:
 
         if not is_num(text):
-            return send(chat_id, "❌ numero non valido")
+            send(chat_id, "❌ numero non valido")
+            send(chat_id, "📅 giorni a settimana")
+            return "ok"
 
         days = int(text)
 
         if days < 1 or days > 7:
-            return send(chat_id, "❌ massimo 7 giorni")
+            send(chat_id, "❌ massimo 7 giorni")
+            send(chat_id, "📅 giorni a settimana")
+            return "ok"
 
         u["data"]["days"] = days
         u["step"] = 7
         send(chat_id, "📅 scrivi i giorni separati da virgola")
         return "ok"
 
+    # DAYS LIST (FIX COERENZA)
     if u["step"] == 7:
 
         days_list = [d.strip() for d in text.split(",")]
 
         if len(days_list) != u["data"]["days"]:
-            return send(chat_id, "❌ numero giorni non coerente")
+            send(chat_id, "❌ numero giorni non coerente, reinserisci")
+            send(chat_id, "📅 scrivi i giorni separati da virgola")
+            return "ok"
 
         u["data"]["days_list"] = days_list
 
