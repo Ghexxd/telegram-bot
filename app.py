@@ -1,7 +1,6 @@
 from flask import Flask, request
 import requests
 import os
-import random
 
 app = Flask(__name__)
 
@@ -10,9 +9,9 @@ URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 user_data = {}
 
-# -------------------------
+# =========================
 # SEND
-# -------------------------
+# =========================
 def send(chat_id, text):
     requests.post(f"{URL}/sendMessage", json={
         "chat_id": chat_id,
@@ -25,125 +24,196 @@ def norm(t):
 def is_num(x):
     return x.isdigit()
 
-# -------------------------
-# LIBRERIA ESERCIZI (BASE)
-# -------------------------
-MASSA = {
-    "push_a": ["panca 4x10", "shoulder press 3x10", "dip 3x max", "alzate laterali 3x12"],
-    "push_b": ["panca inclinata 4x8", "push-up 4x max", "arnold press 3x10", "tricipiti 3x12"],
-    "push_c": ["chest press 4x10", "push-up lento 4x8", "shoulder press 4x10", "dip 3x max"],
+# =========================
+# VALIDATION
+# =========================
+def valid_age(a): return 10 <= a <= 99
+def valid_weight(w): return 40 <= w <= 300
 
-    "pull_a": ["rematore 4x10", "lat machine 4x10", "curl 3x12", "pullover 3x12"],
-    "pull_b": ["trazioni 4x max", "rematore bilanciere 4x8", "curl hammer 3x12", "rear delts 3x12"],
-    "pull_c": ["lat machine stretta 4x10", "pulley 4x10", "curl concentrato 3x12", "face pull 3x15"],
+def valid_level(x):
+    return x in ["mai allenato", "base", "avanzato", "esperto"]
 
-    "legs_a": ["squat 4x10", "affondi 3x12", "leg press 4x10", "calf raises 4x15"],
-    "legs_b": ["stacco rumeno 4x8", "leg curl 3x12", "squat lento 4x10", "glute bridge 3x15"],
-    "legs_c": ["hack squat 4x10", "affondi camminati 3x12", "leg extension 3x12", "calf 4x20"],
+def valid_goal(x):
+    return x in ["massa", "dimagrimento"]
 
-    "full_a": ["squat 4x10", "panca 4x10", "rematore 4x10", "plank 3x40s"],
-    "full_b": ["squat jump", "push-up max", "affondi 3x12", "addome 3x15"],
-    "full_c": ["leg press 4x10", "lat machine 4x10", "dip 3x max", "core 3x"],
-    "full_d": ["circuito completo 4 giri", "burpees", "squat", "push-up"]
-}
+def valid_focus(x):
+    return x in ["upper body", "lower body", "full body"]
 
-DIMAGRIMENTO = {
-    "hiit_a": ["burpees 12x", "squat jump 15x", "push-up 12x", "mountain climber 30s"],
-    "hiit_b": ["jumping jack 1 min", "burpees 10x", "plank 45s", "corsa 2 min"],
-    "hiit_c": ["tabata burpees", "squat 20x", "push-up 15x", "plank 1 min"],
-    "hiit_d": ["circuito 5 giri", "jump squat", "mountain climber", "addome"]
-}
+# =========================
+# WORKOUT LOGIC (NO RANDOM)
+# =========================
 
-# -------------------------
-# ENGINE
-# -------------------------
-def build_day(goal, level, focus):
+def get_plan(goal, days):
 
     if goal == "massa":
 
-        if level == "mai allenato":
-            pool = ["full_a", "full_b"]
+        if days == 1:
+            return ["FULL BODY (forza totale)"]
 
-        elif level == "base":
+        if days == 2:
+            return ["UPPER", "LOWER"]
 
-            if focus == "push":
-                pool = ["push_a", "push_b", "push_c"]
-            elif focus == "pull":
-                pool = ["pull_a", "pull_b", "pull_c"]
-            elif focus == "legs":
-                pool = ["legs_a", "legs_b", "legs_c"]
-            else:
-                pool = ["full_a", "full_b", "full_c", "full_d"]
+        if days == 3:
+            return ["PUSH", "PULL", "LEGS"]
 
-        else:
-            pool = list(MASSA.keys())
+        if days == 4:
+            return ["PUSH", "PULL", "LEGS", "FULL BODY"]
 
-        chosen = random.choice(pool)
-        return "\n".join(MASSA[chosen])
+        if days == 5:
+            return ["PUSH", "PULL", "LEGS", "UPPER", "LOWER"]
+
+        if days == 6:
+            return ["PUSH", "PULL", "LEGS", "PUSH", "PULL", "LEGS"]
+
+        return ["PUSH", "PULL", "LEGS", "UPPER", "LOWER", "FULL BODY", "RECOVERY"]
 
     else:
 
-        if level == "mai allenato":
-            pool = ["hiit_a", "hiit_b"]
+        if days == 1:
+            return ["HIIT FULL BODY"]
 
-        elif level == "base":
-            pool = ["hiit_a", "hiit_b", "hiit_c"]
+        if days == 2:
+            return ["HIIT + CORE", "CARDIO + CORE"]
 
-        else:
-            pool = list(DIMAGRIMENTO.keys())
+        if days == 3:
+            return ["FULL CIRCUIT", "HIIT", "CARDIO"]
 
-        chosen = random.choice(pool)
-        return "\n".join(DIMAGRIMENTO[chosen])
+        if days == 4:
+            return ["HIIT", "UPPER TONING", "LOWER TONING", "CARDIO"]
 
-# -------------------------
-# WORKOUT GENERATOR
-# -------------------------
+        return ["HIIT", "CARDIO", "CIRCUIT", "CORE", "ACTIVE RECOVERY"]
+
+
+# =========================
+# EXERCISE BUILDER (LOGICAL)
+# =========================
+
+def build_workout(day_type):
+
+    if day_type == "PUSH":
+        return [
+            "panca piana 4x8-10",
+            "shoulder press 3x10",
+            "dip 3x max",
+            "alzate laterali 3x12"
+        ]
+
+    if day_type == "PULL":
+        return [
+            "lat machine 4x10",
+            "rematore 4x10",
+            "curl bicipiti 3x12",
+            "face pull 3x15"
+        ]
+
+    if day_type == "LEGS":
+        return [
+            "squat 4x8-10",
+            "affondi 3x12",
+            "leg press 4x10",
+            "calf raises 4x15"
+        ]
+
+    if day_type == "FULL BODY":
+        return [
+            "squat 4x10",
+            "panca 4x10",
+            "rematore 4x10",
+            "plank 3x45s"
+        ]
+
+    if "UPPER" in day_type:
+        return [
+            "panca 4x10",
+            "lat machine 4x10",
+            "shoulder press 3x10",
+            "curl + tricipiti 3x12"
+        ]
+
+    if "LOWER" in day_type:
+        return [
+            "squat 4x10",
+            "leg press 4x10",
+            "stacco rumeno 3x10",
+            "calf raises 4x15"
+        ]
+
+    if "HIIT" in day_type:
+        return [
+            "burpees 12x",
+            "squat jump 15x",
+            "mountain climber 30s",
+            "plank 45s"
+        ]
+
+    if "CARDIO" in day_type:
+        return [
+            "corsa 10-20 min",
+            "jumping jack 1 min",
+            "corda 5 min",
+            "core leggero"
+        ]
+
+    if "CORE" in day_type:
+        return [
+            "plank",
+            "crunch",
+            "leg raise",
+            "ab twist"
+        ]
+
+    return ["riposo attivo"]
+
+
+# =========================
+# GENERATOR
+# =========================
+
 def generate(data):
 
     name = data["name"]
     age = int(data["age"])
     weight = int(data["weight"])
-    level = data["level"]
     goal = data["goal"]
-    focus = data["focus"]
     days = data["days"]
     days_list = data["days_list"]
 
-    intensity = "ottimale"
-    if age < 18:
-        intensity = "giovane"
-    elif age > 35:
-        intensity = "protetto"
+    plan = get_plan(goal, days)
 
     text = f"""
-🏋️ PIANO PERSONALIZZATO
+🏋️ PIANO PERSONALIZZATO STRUTTURATO
 
 👤 {name}
 🎯 {goal}
-📊 {level}
-🔥 {intensity}
 ⚖️ {weight} kg
+🔥 giorni: {days}
 
 """
 
     for i in range(days):
 
-        day = days_list[i] if i < len(days_list) else f"Giorno {i+1}"
+        day_name = days_list[i] if i < len(days_list) else f"Giorno {i+1}"
+        day_type = plan[i]
 
-        text += f"\n📅 {day.upper()}\n"
-        text += build_day(goal, level, focus)
-        text += "\n-----------------\n"
+        text += f"\n📅 {day_name.upper()} — {day_type}\n"
+
+        exercises = build_workout(day_type)
+
+        for ex in exercises:
+            text += f"- {ex}\n"
+
+        text += "\n-------------------\n"
 
     return text
 
-# -------------------------
+
+# =========================
 # WEBHOOK
-# -------------------------
+# =========================
 @app.route("/webhook", methods=["POST"])
 def webhook():
 
     data = request.json
-
     if "message" not in data:
         return "ok"
 
@@ -173,58 +243,51 @@ def webhook():
         return "ok"
 
     if u["step"] == 3:
-        if not is_num(text):
-            send(chat_id, "❌ Numero valido")
-            return "ok"
+        if not is_num(text): return send(chat_id, "❌ numero valido")
+        if not valid_age(int(text)): return send(chat_id, "❌ età non valida")
         u["data"]["age"] = text
         u["step"] = 4
         send(chat_id, "⚖️ Peso:")
         return "ok"
 
     if u["step"] == 4:
-        if not is_num(text):
-            send(chat_id, "❌ Numero valido")
-            return "ok"
+        if not is_num(text): return send(chat_id, "❌ numero valido")
+        if not valid_weight(int(text)): return send(chat_id, "❌ peso non valido")
         u["data"]["weight"] = text
         u["step"] = 5
-        send(chat_id, "📊 livello (mai allenato/base/avanzato/esperto)")
+        send(chat_id, "🎯 massa o dimagrimento")
         return "ok"
 
     if u["step"] == 5:
-        u["data"]["level"] = text
+        if not valid_goal(text): return send(chat_id, "❌ risposta non valida")
+        u["data"]["goal"] = text
         u["step"] = 6
-        send(chat_id, "🎯 massa o dimagrimento?")
+        send(chat_id, "📅 giorni a settimana")
         return "ok"
 
     if u["step"] == 6:
-        u["data"]["goal"] = text
+
+        if not is_num(text):
+            return send(chat_id, "❌ numero non valido")
+
+        days = int(text)
+
+        if days < 1 or days > 7:
+            return send(chat_id, "❌ massimo 7 giorni")
+
+        u["data"]["days"] = days
         u["step"] = 7
-        send(chat_id, "🎯 focus (push/pull/legs/full body)")
+        send(chat_id, "📅 scrivi i giorni separati da virgola")
         return "ok"
 
     if u["step"] == 7:
-        u["data"]["focus"] = text
-        u["step"] = 8
-        send(chat_id, "📅 giorni a settimana (1-7)")
-        return "ok"
 
-    if u["step"] == 8:
-        if not is_num(text):
-            send(chat_id, "❌ numero valido")
-            return "ok"
-        days = int(text)
-        if days < 1 or days > 7:
-            send(chat_id, "❌ 1-7 giorni")
-            return "ok"
+        days_list = [d.strip() for d in text.split(",")]
 
-        u["data"]["days"] = days
-        u["step"] = 9
-        send(chat_id, "📅 scrivi giorni separati da virgola")
-        return "ok"
+        if len(days_list) != u["data"]["days"]:
+            return send(chat_id, "❌ numero giorni non coerente")
 
-    if u["step"] == 9:
-
-        u["data"]["days_list"] = [d.strip() for d in text.split(",")]
+        u["data"]["days_list"] = days_list
 
         result = generate(u["data"])
 
@@ -234,6 +297,7 @@ def webhook():
         return "ok"
 
     return "ok"
+
 
 @app.route("/")
 def home():
