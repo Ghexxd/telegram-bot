@@ -174,7 +174,6 @@ def generate(data):
 🎯 obiettivo: {data['goal']}
 💪 focus: {data['focus']}
 📅 giorni: {data['days']}
-
 """
 
     for i in range(data["days"]):
@@ -192,7 +191,7 @@ def generate(data):
     return text
 
 # =========================
-# WEBHOOK FLOW
+# WEBHOOK
 # =========================
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -210,20 +209,17 @@ def webhook():
 
     u = user_data[chat_id]
 
-    # START
     if text == "/start":
         u["step"] = 1
         send(chat_id, "👤 Nome e cognome:")
         return "ok"
 
-    # NAME
     if u["step"] == 1:
         u["data"]["name"] = text
         u["step"] = 2
         send(chat_id, "📧 Email:")
         return "ok"
 
-    # EMAIL
     if u["step"] == 2:
         if "@" not in text:
             send(chat_id, "❌ Email non valida")
@@ -234,7 +230,6 @@ def webhook():
         send(chat_id, "🎂 Età:")
         return "ok"
 
-    # AGE
     if u["step"] == 3:
         if not is_num(text):
             send(chat_id, "❌ Numero non valido")
@@ -250,7 +245,6 @@ def webhook():
         send(chat_id, "⚖️ Peso:")
         return "ok"
 
-    # WEIGHT
     if u["step"] == 4:
         if not is_num(text):
             send(chat_id, "❌ Numero non valido")
@@ -271,7 +265,6 @@ def webhook():
              "- esperto")
         return "ok"
 
-    # LEVEL
     if u["step"] == 5:
         if text not in ["mai allenato","livello base","livello avanzato","esperto"]:
             send(chat_id, "❌ livello non valido")
@@ -282,7 +275,6 @@ def webhook():
         send(chat_id, "🏋️ attrezzatura (corpo libero / casa / palestra)")
         return "ok"
 
-    # EQUIPMENT
     if u["step"] == 6:
         if text not in ["corpo libero","casa","palestra"]:
             send(chat_id, "❌ attrezzatura non valida")
@@ -293,7 +285,6 @@ def webhook():
         send(chat_id, "🎯 massa o dimagrimento")
         return "ok"
 
-    # GOAL
     if u["step"] == 7:
         if text not in ["massa","dimagrimento"]:
             send(chat_id, "❌ obiettivo non valido")
@@ -304,7 +295,6 @@ def webhook():
         send(chat_id, "💪 focus (upper body / lower body / full body)")
         return "ok"
 
-    # FOCUS (AGGIUNTO)
     if u["step"] == 8:
         if text not in ["upper body","lower body","full body"]:
             send(chat_id, "❌ focus non valido")
@@ -315,7 +305,6 @@ def webhook():
         send(chat_id, "📅 giorni a settimana (1-7)")
         return "ok"
 
-    # DAYS
     if u["step"] == 9:
         if not is_num(text):
             send(chat_id, "❌ numero non valido")
@@ -330,14 +319,12 @@ def webhook():
         u["data"]["days"] = days
 
         if days == 1:
-            send(chat_id,
-                "⚠️ ATTENZIONE: 1 giorno è poco per risultati ottimali.")
+            send(chat_id, "⚠️ 1 giorno è poco per risultati ottimali.")
 
         u["step"] = 10
         send(chat_id, "📅 scrivi i giorni (lunedi, martedi...)")
         return "ok"
 
-    # DAYS LIST
     if u["step"] == 10:
 
         raw = text.replace(",", " ")
@@ -363,93 +350,7 @@ def webhook():
     return "ok"
 
 # =========================
-# HOME
-# =========================
-@app.route("/")
-def home():
-    return "Bot attivo"
-    # LEVEL
-    if u["step"] == 5:
-        if text not in ["mai allenato","base","avanzato","esperto"]:
-            send(chat_id, "❌ livello non valido")
-            return "ok"
-
-        u["data"]["level"] = text
-        u["step"] = 6
-        send(chat_id, "🏋️ attrezzatura (corpo libero/casa/palestra)")
-        return "ok"
-
-    # EQUIPMENT
-    if u["step"] == 6:
-        if text not in ["corpo libero","casa","palestra"]:
-            send(chat_id, "❌ attrezzatura non valida")
-            return "ok"
-
-        u["data"]["equipment"] = text
-        u["step"] = 7
-        send(chat_id, "🎯 massa o dimagrimento")
-        return "ok"
-
-    # GOAL
-    if u["step"] == 7:
-        if text not in ["massa","dimagrimento"]:
-            send(chat_id, "❌ obiettivo non valido")
-            return "ok"
-
-        u["data"]["goal"] = text
-        u["step"] = 8
-        send(chat_id, "📅 giorni a settimana (1-7)")
-        return "ok"
-
-    # DAYS
-    if u["step"] == 8:
-        if not is_num(text):
-            send(chat_id, "❌ numero non valido")
-            return "ok"
-
-        days = int(text)
-
-        if days < 1 or days > 7:
-            send(chat_id, "❌ max 7 giorni")
-            return "ok"
-
-        u["data"]["days"] = days
-
-        if days == 1:
-            send(chat_id,
-                "⚠️ Attenzione: 1 giorno è poco per risultati ottimali.")
-
-        u["step"] = 9
-        send(chat_id, "📅 scrivi i giorni (lunedi, martedi...)")
-        return "ok"
-
-    # DAYS LIST
-    if u["step"] == 9:
-
-        raw = text.replace(",", " ")
-        days_list = raw.split()
-
-        for d in days_list:
-            if d not in VALID_DAYS:
-                send(chat_id, f"❌ giorno non valido: {d}")
-                return "ok"
-
-        if len(days_list) != u["data"]["days"]:
-            send(chat_id, "❌ numero giorni non coerente")
-            return "ok"
-
-        u["data"]["days_list"] = days_list
-
-        result = generate(u["data"])
-        send(chat_id, result)
-
-        user_data[chat_id] = {"step": 0, "data": {}}
-        return "ok"
-
-    return "ok"
-
-# =========================
-# HOME
+# HOME (FIX DEFINITIVO)
 # =========================
 @app.route("/")
 def home():
