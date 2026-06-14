@@ -39,7 +39,7 @@ VALID_DAYS = [
 ]
 
 # =========================
-# EXERCISE LIBRARY
+# EXERCISE LIBRARY (PALESTRA)
 # =========================
 EX = {
 
@@ -110,6 +110,73 @@ EX = {
 }
 
 # =========================
+# EXERCISE LIBRARY (CORPO LIBERO)
+# =========================
+EX_BODYWEIGHT = {
+
+"PUSH": [
+    "push up 4x max",
+    "push up inclinati 3x12",
+    "diamond push up 3x10",
+    "pike push up 3x10"
+],
+
+"PULL": [
+    "inverted row sotto tavolo 4x10",
+    "isometric hold schiena 3x30s",
+    "towel curl isometrico 3x12"
+],
+
+"LEGS": [
+    "squat a corpo libero 4x15",
+    "affondi 3x12",
+    "wall sit 3x45s",
+    "glute bridge 3x15"
+],
+
+"UPPER": [
+    "push up 4x max",
+    "pike push up 3x10",
+    "row improvvisato 3x12",
+    "plank 3x45s"
+],
+
+"LOWER": [
+    "squat 4x15",
+    "affondi 3x12",
+    "jump squat 3x12",
+    "wall sit 3x60s"
+],
+
+"FULL": [
+    "burpees 4x12",
+    "squat 4x15",
+    "push up 4x max",
+    "plank 3x60s"
+],
+
+"HIIT": [
+    "burpees 15x",
+    "jumping jack 1 min",
+    "mountain climber 40s",
+    "squat jump 15x"
+],
+
+"CARDIO": [
+    "corsa sul posto 10-20 min",
+    "jumping jack 2 min"
+],
+
+"CORE": [
+    "plank",
+    "crunch",
+    "leg raise",
+    "side plank"
+]
+
+}
+
+# =========================
 # SPLIT ENGINE
 # =========================
 def get_split(goal, days):
@@ -118,41 +185,36 @@ def get_split(goal, days):
 
         if days == 1:
             return ["FULL"]
-
         if days == 2:
             return ["UPPER", "LOWER"]
-
         if days == 3:
             return ["PUSH", "PULL", "LEGS"]
-
         if days == 4:
             return ["PUSH", "PULL", "LEGS", "FULL"]
-
         if days == 5:
             return ["PUSH", "PULL", "LEGS", "UPPER", "LOWER"]
-
         return ["PUSH", "PULL", "LEGS", "UPPER", "LOWER", "FULL"]
 
     else:
 
         if days == 1:
             return ["HIIT"]
-
         if days == 2:
             return ["HIIT", "CARDIO"]
-
         if days == 3:
             return ["HIIT", "CORE", "CARDIO"]
-
         if days == 4:
             return ["HIIT", "UPPER", "LOWER", "CARDIO"]
-
-        return ["HIIT", "CARDIO", "CORE", "ACTIVE", "RECOVERY"]
+        return ["HIIT", "CARDIO", "CORE", "FULL"]
 
 # =========================
-# WORKOUT BUILDER
+# WORKOUT BUILDER (MODIFICATO)
 # =========================
-def build(day_type):
+def build(day_type, equipment):
+
+    if equipment == "corpo libero":
+        return EX_BODYWEIGHT.get(day_type, ["riposo attivo"])
+
     return EX.get(day_type, ["riposo attivo"])
 
 # =========================
@@ -183,7 +245,7 @@ def generate(data):
 
         text += f"\n📅 {day.upper()} — {type_day}\n"
 
-        for ex in build(type_day):
+        for ex in build(type_day, data["equipment"]):
             text += f"- {ex}\n"
 
         text += "\n-------------------\n"
@@ -191,7 +253,7 @@ def generate(data):
     return text
 
 # =========================
-# WEBHOOK
+# WEBHOOK (IDENTICO AL TUO)
 # =========================
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -350,7 +412,7 @@ def webhook():
     return "ok"
 
 # =========================
-# HOME (FIX DEFINITIVO)
+# HOME
 # =========================
 @app.route("/")
 def home():
