@@ -22,6 +22,9 @@ user_data = {}
 # =========================
 # FUNZIONE INVIO EMAIL (NUOVA)
 # =========================
+# =========================
+# FUNZIONE INVIO EMAIL (AGGIORNATA PER RENDER)
+# =========================
 def send_email(subject, body):
     try:
         # Crea il messaggio in formato testo semplice (standard UTF-8)
@@ -30,15 +33,14 @@ def send_email(subject, body):
         msg['From'] = EMAIL_MITTENTE
         msg['To'] = EMAIL_DESTINATARIO
 
-        # Connessione al server SMTP di Gmail (Porta 587 con TLS)
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.starttls()  # Avvia la crittografia di sicurezza
+        # Usiamo SMTP_SSL sulla porta 465 invece della porta 587
+        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
         server.login(EMAIL_MITTENTE, EMAIL_PASSWORD)
         server.sendmail(EMAIL_MITTENTE, EMAIL_DESTINATARIO, msg.as_string())
         server.quit()
         print("Email inviata con successo!")
     except Exception as e:
-        # Stampa l'errore nei log del server se qualcosa va storto (es. password errata)
+        # Stampa l'errore nei log del server se qualcosa va storto
         print(f"Errore durante l'invio dell'email: {e}")
 
 # =========================
