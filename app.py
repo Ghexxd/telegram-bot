@@ -35,7 +35,7 @@ def is_num(x):
 # =========================
 def valid_age(a): return 10 <= a <= 99
 def valid_weight(w): return 40 <= w <= 300
-def valid_height(h): return 100 <= h <= 250  # Nuova validazione altezza in cm
+def valid_height(h): return 50 <= h <= 300  # Modificato limite altezza: 50 cm - 3 metri (300 cm)
 
 VALID_DAYS = [
     "lunedi", "martedi", "mercoledi",
@@ -216,17 +216,17 @@ def webhook():
             send(chat_id, "❌ Età non consentita (inserire tra 10 e 99):")
             return "ok"
         u["data"]["age"] = age
-        u["step"] = 35  # Step intermedio per l'altezza
+        u["step"] = 35  
         send(chat_id, "📏 Altezza (in cm, es: 175):")
         return "ok"
 
-    if u["step"] == 35:  # Gestione della nuova domanda sull'altezza
+    if u["step"] == 35:  
         if not is_num(text):
             send(chat_id, "❌ Inserisci un numero valido per l'altezza:")
             return "ok"
         height = int(text)
         if not valid_height(height):
-            send(chat_id, "❌ Altezza non valida (inserire tra 100 e 250 cm):")
+            send(chat_id, "❌ Altezza non valida (inserire tra 50 e 300 cm):")  # Testo di errore aggiornato per i nuovi limiti
             return "ok"
         u["data"]["height"] = height
         u["step"] = 4
@@ -260,10 +260,6 @@ def webhook():
             send(chat_id, "❌ Attrezzatura non valida. Scegli tra corpo libero, casa o palestra:")
             return "ok"
         u["data"]["equipment"] = text
-        
-        # FRASE AGGIUNTIVA SE SCEGLIE "CASA"
-        if text == "casa":
-            send(chat_id, "💪 Sarà dura senza attrezzi ma ce la faremo!")
             
         u["step"] = 7
         send(chat_id, "🎯 Qual è il tuo obiettivo?\n- massa\n- dimagrimento")
@@ -297,17 +293,16 @@ def webhook():
             return "ok"
         u["data"]["days"] = days
 
-        # LOGICA GIORNI OTTIMIZZATA (1 giorno o 7 giorni)
         if days == 1:
             send(chat_id, "⚠️ Nota: 1 giorno è poco per risultati ottimali.")
-            u["data"]["days_list"] = ["allenamento"] # Assegnazione automatica
+            u["data"]["days_list"] = ["allenamento"] 
             result = generate(u["data"])
             send(chat_id, result)
             user_data[chat_id] = {"step": 0, "data": {}}
             return "ok"
             
         elif days == 7:
-            u["data"]["days_list"] = VALID_DAYS # Prende tutti i giorni in automatico
+            u["data"]["days_list"] = VALID_DAYS 
             result = generate(u["data"])
             send(chat_id, result)
             user_data[chat_id] = {"step": 0, "data": {}}
