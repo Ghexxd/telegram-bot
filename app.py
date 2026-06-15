@@ -19,7 +19,21 @@ def send(chat_id, text):
     })
 
 def norm(t):
-    return t.lower().strip()
+    t = t.lower().strip()
+
+    replacements = {
+        "à": "a",
+        "è": "e",
+        "é": "e",
+        "ì": "i",
+        "ò": "o",
+        "ù": "u"
+    }
+
+    for old, new in replacements.items():
+        t = t.replace(old, new)
+
+    return t
 
 def is_num(x):
     return x.isdigit()
@@ -176,6 +190,72 @@ EX_BODYWEIGHT = {
 
 }
 
+EX_HOME = {
+
+"PUSH": [
+    "floor press con manubri 4x10",
+    "push up 3xmax",
+    "shoulder press manubri 4x10",
+    "alzate laterali manubri 3x12"
+],
+
+"PULL": [
+    "trazioni alla sbarra 4xmax",
+    "rematore manubrio 4x10",
+    "curl manubrio 3x12",
+    "shrug manubri 3x15"
+],
+
+"LEGS": [
+    "goblet squat 4x12",
+    "affondi con manubri 3x12",
+    "stacco rumeno manubri 4x10",
+    "calf raises 4x20"
+],
+
+"UPPER": [
+    "floor press 4x10",
+    "trazioni 4xmax",
+    "shoulder press 4x10",
+    "curl 3x12"
+],
+
+"LOWER": [
+    "goblet squat 4x12",
+    "affondi 3x12",
+    "stacco rumeno 4x10",
+    "calf raises 4x20"
+],
+
+"FULL": [
+    "goblet squat 4x12",
+    "push up 4xmax",
+    "rematore manubrio 4x10",
+    "plank 3x60s"
+],
+
+"HIIT": [
+    "burpees 15x",
+    "jump squat 15x",
+    "mountain climber 40s",
+    "jumping jack 60s"
+],
+
+"CARDIO": [
+    "camminata veloce 20 min",
+    "corda 5 min"
+],
+
+"CORE": [
+    "plank",
+    "crunch",
+    "leg raise",
+    "side plank"
+]
+
+}
+
+
 # =========================
 # SPLIT ENGINE
 # =========================
@@ -215,7 +295,38 @@ def build(day_type, equipment):
     if equipment == "corpo libero":
         return EX_BODYWEIGHT.get(day_type, ["riposo attivo"])
 
+    if equipment == "casa":
+        return EX_HOME.get(day_type, ["riposo attivo"])
+
     return EX.get(day_type, ["riposo attivo"])
+
+
+def get_multiplier(age, level):
+
+    multiplier = 1
+
+    if age < 18:
+        multiplier = 0.8
+    elif age <= 35:
+        multiplier = 1.2
+    elif age <= 60:
+        multiplier = 1
+    else:
+        multiplier = 0.7
+
+    if level == "mai allenato":
+        multiplier *= 0.8
+
+    elif level == "livello base":
+        multiplier *= 1
+
+    elif level == "livello avanzato":
+        multiplier *= 1.2
+
+    elif level == "esperto":
+        multiplier *= 1.4
+
+    return multiplier
 
 # =========================
 # GENERATOR
@@ -223,6 +334,14 @@ def build(day_type, equipment):
 def generate(data):
 
     plan = get_split(data["goal"], data["days"])
+
+    focus = data["focus"]
+
+    if focus == "upper body" and data["days"] >= 3:
+        plan = ["PUSH", "PULL", "UPPER"] + plan[3:]
+
+    elif focus == "lower body" and data["days"] >= 3:
+        plan = ["LEGS", "LOWER", "LEGS"] + plan[3:]
 
     text = f"""
 🏋️ PIANO PERSONALIZZATO
