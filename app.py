@@ -35,6 +35,7 @@ def is_num(x):
 # =========================
 def valid_age(a): return 10 <= a <= 99
 def valid_weight(w): return 40 <= w <= 300
+def valid_height(h): return 100 <= h <= 250  # Nuova validazione altezza in cm
 
 VALID_DAYS = [
     "lunedi", "martedi", "mercoledi",
@@ -42,7 +43,7 @@ VALID_DAYS = [
 ]
 
 # =========================
-# LIBRERIE ESERCIZI
+# LIBRERIE ESERCIZI (IDENTICHE)
 # =========================
 EX = {
     "PUSH": ["panca piana 4x8-10", "panca inclinata 3x10", "shoulder press 3x10", "alzate laterali 3x12", "dip 3x max"],
@@ -90,7 +91,7 @@ def get_split(goal, days):
         if days == 3: return ["PUSH", "PULL", "LEGS"]
         if days == 4: return ["PUSH", "PULL", "LEGS", "FULL"]
         if days == 5: return ["PUSH", "PULL", "LEGS", "UPPER", "LOWER"]
-        return ["PUSH", "PULL", "LEGS", "UPPER", "LOWER", "FULL"]
+        return ["PUSH", "PULL", "LEGS", "UPPER", "LOWER", "FULL", "CORE"]
     else:
         if days == 1: return ["HIIT"]
         if days == 2: return ["HIIT", "CARDIO"]
@@ -116,26 +117,19 @@ def generate(data):
     focus = data["focus"]
     goal = data["goal"]
     
-    # Se l'obiettivo è massa, applichiamo i focus muscolari dedicati
     if goal == "massa":
         if focus == "upper body":
             plans = {
-                1: ["UPPER"],
-                2: ["PUSH", "PULL"],
-                3: ["PUSH", "PULL", "UPPER"],
-                4: ["PUSH", "PULL", "UPPER", "PUSH"],
-                5: ["PUSH", "PULL", "UPPER", "PUSH", "PULL"],
+                1: ["UPPER"], 2: ["PUSH", "PULL"], 3: ["PUSH", "PULL", "UPPER"],
+                4: ["PUSH", "PULL", "UPPER", "PUSH"], 5: ["PUSH", "PULL", "UPPER", "PUSH", "PULL"],
                 6: ["PUSH", "PULL", "UPPER", "PUSH", "PULL", "UPPER"],
                 7: ["PUSH", "PULL", "UPPER", "PUSH", "PULL", "UPPER", "PUSH"]
             }
             plan = plans.get(days, ["FULL"])
         elif focus == "lower body":
             plans = {
-                1: ["LOWER"],
-                2: ["LEGS", "LOWER"],
-                3: ["LEGS", "LOWER", "LEGS"],
-                4: ["LEGS", "LOWER", "LEGS", "LOWER"],
-                5: ["LEGS", "LOWER", "LEGS", "LOWER", "LEGS"],
+                1: ["LOWER"], 2: ["LEGS", "LOWER"], 3: ["LEGS", "LOWER", "LEGS"],
+                4: ["LEGS", "LOWER", "LEGS", "LOWER"], 5: ["LEGS", "LOWER", "LEGS", "LOWER", "LEGS"],
                 6: ["LEGS", "LOWER", "LEGS", "LOWER", "LEGS", "LOWER"],
                 7: ["LEGS", "LOWER", "LEGS", "LOWER", "LEGS", "LOWER", "LEGS"]
             }
@@ -143,15 +137,16 @@ def generate(data):
         else:
             plan = get_split(goal, days)
     else:
-        # Se è dimagrimento, mantiene la logica HIIT/Cardio standard
         plan = get_split(goal, days)
 
     text = f"""
+    
 🏋️ PIANO PERSONALIZZATO
 
 👤 {data['name'].title()}
 📧 {data['email']}
 🎂 {data['age']} anni
+📏 {data['height']} cm
 ⚖️ {data['weight']} kg
 📊 Livello: {data['level']}
 🏋️ Attrezzatura: {data['equipment']}
@@ -183,7 +178,6 @@ def webhook():
     msg = data["message"]
     chat_id = msg["chat"]["id"]
     
-    # IMPORTANTE: non sovrascrivere il testo originale se serve mantenere il case per il nome
     raw_text = msg.get("text", "")
     text = norm(raw_text)
 
@@ -194,12 +188,12 @@ def webhook():
 
     if text == "/start":
         u["step"] = 1
-        u["data"] = {}  # Resetta i dati precedenti
+        u["data"] = {}
         send(chat_id, "👤 Nome e cognome:")
         return "ok"
 
     if u["step"] == 1:
-        u["data"]["name"] = raw_text  # Salviamo il nome con le maiuscole corrette
+        u["data"]["name"] = raw_text
         u["step"] = 2
         send(chat_id, "📧 Email:")
         return "ok"
@@ -222,6 +216,19 @@ def webhook():
             send(chat_id, "❌ Età non consentita (inserire tra 10 e 99):")
             return "ok"
         u["data"]["age"] = age
+        u["step"] = 35  # Step intermedio per l'altezza
+        send(chat_id, "📏 Altezza (in cm, es: 175):")
+        return "ok"
+
+    if u["step"] == 35:  # Gestione della nuova domanda sull'altezza
+        if not is_num(text):
+            send(chat_id, "❌ Inserisci un numero valido per l'altezza:")
+            return "ok"
+        height = int(text)
+        if not valid_height(height):
+            send(chat_id, "❌ Altezza non valida (inserire tra 100 e 250 cm):")
+            return "ok"
+        u["data"]["height"] = height
         u["step"] = 4
         send(chat_id, "⚖️ Peso (in kg, es: 70):")
         return "ok"
@@ -236,7 +243,7 @@ def webhook():
             return "ok"
         u["data"]["weight"] = weight
         u["step"] = 5
-        send(chat_id, "📊 Seleziona il tuo livello d'esperienza scrivendolo esattamente:\n- mai allenato\n- livello base\n- livello avanzato\n- esperto")
+        send(chat_id, "📊 Seleziona il tuo livello d'esperienza:\n- mai allenato\n- livello base\n- livello avanzato\n- esperto")
         return "ok"
 
     if u["step"] == 5:
@@ -253,6 +260,11 @@ def webhook():
             send(chat_id, "❌ Attrezzatura non valida. Scegli tra corpo libero, casa o palestra:")
             return "ok"
         u["data"]["equipment"] = text
+        
+        # FRASE AGGIUNTIVA SE SCEGLIE "CASA"
+        if text == "casa":
+            send(chat_id, "💪 Sarà dura senza attrezzi ma ce la faremo!")
+            
         u["step"] = 7
         send(chat_id, "🎯 Qual è il tuo obiettivo?\n- massa\n- dimagrimento")
         return "ok"
@@ -284,10 +296,25 @@ def webhook():
             send(chat_id, "❌ Puoi scegliere solo da 1 a 7 giorni:")
             return "ok"
         u["data"]["days"] = days
+
+        # LOGICA GIORNI OTTIMIZZATA (1 giorno o 7 giorni)
         if days == 1:
             send(chat_id, "⚠️ Nota: 1 giorno è poco per risultati ottimali.")
+            u["data"]["days_list"] = ["allenamento"] # Assegnazione automatica
+            result = generate(u["data"])
+            send(chat_id, result)
+            user_data[chat_id] = {"step": 0, "data": {}}
+            return "ok"
+            
+        elif days == 7:
+            u["data"]["days_list"] = VALID_DAYS # Prende tutti i giorni in automatico
+            result = generate(u["data"])
+            send(chat_id, result)
+            user_data[chat_id] = {"step": 0, "data": {}}
+            return "ok"
+
         u["step"] = 10
-        send(chat_id, "📅 Elenca i giorni separati da uno spazio o virgola (es: lunedi, mercoledi, venerdi):")
+        send(chat_id, f"📅 Elenca {days} giorni separati da uno spazio o virgola (es: lunedi, mercoledi...):")
         return "ok"
 
     if u["step"] == 10:
@@ -307,7 +334,6 @@ def webhook():
         result = generate(u["data"])
         send(chat_id, result)
 
-        # Reset dello stato dopo il completamento
         user_data[chat_id] = {"step": 0, "data": {}}
         return "ok"
 
