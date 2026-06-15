@@ -1,16 +1,48 @@
 from flask import Flask, request
 import requests
 import os
+import smtplib  # <--- AGGIUNTO per la gestione email
+from email.mime.text import MIMEText  # <--- AGGIUNTO per formattare il testo della mail
 
 app = Flask(__name__)
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "IL_TUO_TOKEN_QUI")
 URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
+# =====================================================================
+# CONFIGURAZIONE EMAIL (INSERISCI I TUOI DATI QUI)
+# =====================================================================
+EMAIL_MITTENTE = "ale.08.rigo@gmail.com"  # La mail che usa il bot per spedire
+EMAIL_PASSWORD = "noip user ibeq lnrh"                 # La password per le app di 16 lettere di Google
+EMAIL_DESTINATARIO = "ale.08.rigo@gmail.com" # La mail dove vuoi ricevere i dati dei clienti
+# =====================================================================
+
 user_data = {}
 
 # =========================
-# SEND
+# FUNZIONE INVIO EMAIL (NUOVA)
+# =========================
+def send_email(subject, body):
+    try:
+        # Crea il messaggio in formato testo semplice (standard UTF-8)
+        msg = MIMEText(body, 'plain', 'utf-8')
+        msg['Subject'] = subject
+        msg['From'] = EMAIL_MITTENTE
+        msg['To'] = EMAIL_DESTINATARIO
+
+        # Connessione al server SMTP di Gmail (Porta 587 con TLS)
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()  # Avvia la crittografia di sicurezza
+        server.login(EMAIL_MITTENTE, EMAIL_PASSWORD)
+        server.sendmail(EMAIL_MITTENTE, EMAIL_DESTINATARIO, msg.as_string())
+        server.quit()
+        print("Email inviata con successo!")
+    except Exception as e:
+        # Stampa l'errore nei log del server se qualcosa va storto (es. password errata)
+        print(f"Errore durante l'invio dell'email: {e}")
+
+# =========================
+# SEND TELEGRAM
 # =========================
 def send(chat_id, text):
     requests.post(f"{URL}/sendMessage", json={
@@ -35,7 +67,7 @@ def is_num(x):
 # =========================
 def valid_age(a): return 10 <= a <= 99
 def valid_weight(w): return 40 <= w <= 300
-def valid_height(h): return 50 <= h <= 300  # Modificato limite altezza: 50 cm - 3 metri (300 cm)
+def valid_height(h): return 50 <= h <= 300  
 
 VALID_DAYS = [
     "lunedi", "martedi", "mercoledi",
@@ -226,7 +258,7 @@ def webhook():
             return "ok"
         height = int(text)
         if not valid_height(height):
-            send(chat_id, "❌ Altezza non valida (inserire tra 50 e 300 cm):")  # Testo di errore aggiornato per i nuovi limiti
+            send(chat_id, "❌ Altezza non valida (inserire tra 50 e 300 cm):")  
             return "ok"
         u["data"]["height"] = height
         u["step"] = 4
@@ -298,6 +330,11 @@ def webhook():
             u["data"]["days_list"] = ["allenamento"] 
             result = generate(u["data"])
             send(chat_id, result)
+            
+            # INVIO EMAIL AL PROPRIETARIO (Caso 1 Giorno)
+            oggetto_mail = f"🆕 Nuovo Lead Telegram: {u['data']['name'].title()}"
+            send_email(oggetto_mail, result)
+            
             user_data[chat_id] = {"step": 0, "data": {}}
             return "ok"
             
@@ -305,6 +342,11 @@ def webhook():
             u["data"]["days_list"] = VALID_DAYS 
             result = generate(u["data"])
             send(chat_id, result)
+            
+            # INVIO EMAIL AL PROPRIETARIO (Caso 7 Giorni)
+            oggetto_mail = f"🆕 Nuovo Lead Telegram: {u['data']['name'].title()}"
+            send_email(oggetto_mail, result)
+            
             user_data[chat_id] = {"step": 0, "data": {}}
             return "ok"
 
@@ -328,6 +370,10 @@ def webhook():
         u["data"]["days_list"] = days_list
         result = generate(u["data"])
         send(chat_id, result)
+
+        # INVIO EMAIL AL PROPRIETARIO (Caso Giorni scelti a mano)
+        oggetto_mail = f"🆕 Nuovo Lead Telegram: {u['data']['name'].title()}"
+        send_email(oggetto_mail, result)
 
         user_data[chat_id] = {"step": 0, "data": {}}
         return "ok"
