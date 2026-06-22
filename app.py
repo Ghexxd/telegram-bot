@@ -169,6 +169,9 @@ def generate(data):
             text += f"- {ex}\n"
         text += "\n-------------------\n"
 
+    # Aggiunta del disclaimer medico richiesto in coda al testo generato
+    text += "\n⚠️ Questa scheda NON sostituisce il parere di un medico! Seguila soltanto se sei perfettamente in salute.\n"
+
     return text
 
 # =========================
@@ -303,9 +306,7 @@ def webhook():
             u["data"]["days_list"] = ["allenamento"] 
             result = generate(u["data"])
             
-            # Mandiamo la risposta all'utente
             send(chat_id, result)
-            # Mandiamo la notifica a TE (con i dati dell'utente)
             send(IL_TUO_CHAT_ID, f"🔔 NUOVO LEAD RICEVUTO:\n{result}")
             
             user_data[chat_id] = {"step": 0, "data": {}}
@@ -315,9 +316,7 @@ def webhook():
             u["data"]["days_list"] = VALID_DAYS 
             result = generate(u["data"])
             
-            # Mandiamo la risposta all'utente
             send(chat_id, result)
-            # Mandiamo la notifica a TE (con i dati dell'utente)
             send(IL_TUO_CHAT_ID, f"🔔 NUOVO LEAD RICEVUTO:\n{result}")
             
             user_data[chat_id] = {"step": 0, "data": {}}
@@ -343,9 +342,7 @@ def webhook():
         u["data"]["days_list"] = days_list
         result = generate(u["data"])
         
-        # Mandiamo la risposta all'utente
         send(chat_id, result)
-        # Mandiamo la notifica a TE (con i dati dell'utente)
         send(IL_TUO_CHAT_ID, f"🔔 NUOVO LEAD RICEVUTO:\n{result}")
 
         user_data[chat_id] = {"step": 0, "data": {}}
