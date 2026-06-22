@@ -1,8 +1,8 @@
 from flask import Flask, request
 import requests
 import os
-import smtplib  # <--- AGGIUNTO per la gestione email
-from email.mime.text import MIMEText  # <--- AGGIUNTO per formattare il testo della mail
+import smtplib  
+from email.mime.text import MIMEText  
 
 app = Flask(__name__)
 
@@ -13,35 +13,30 @@ URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 # CONFIGURAZIONE EMAIL (INSERISCI I TUOI DATI QUI)
 # =====================================================================
 EMAIL_MITTENTE = "ale.08.rigo@gmail.com"  # La mail che usa il bot per spedire
-EMAIL_PASSWORD = "noip user ibeq lnrh"                 # La password per le app di 16 lettere di Google
+EMAIL_PASSWORD = "ixfa pskm jcyt ewur"                 # La password per le app di 16 lettere di Google
 EMAIL_DESTINATARIO = "ale.08.rigo@gmail.com" # La mail dove vuoi ricevere i dati dei clienti
 # =====================================================================
 
 user_data = {}
 
 # =========================
-# FUNZIONE INVIO EMAIL (NUOVA)
-# =========================
-# =========================
-# FUNZIONE INVIO EMAIL (AGGIORNATA PER RENDER)
+# FUNZIONE INVIO EMAIL 
 # =========================
 def send_email(subject, body):
     try:
-        # Crea il messaggio in formato testo semplice (standard UTF-8)
         msg = MIMEText(body, 'plain', 'utf-8')
         msg['Subject'] = subject
         msg['From'] = EMAIL_MITTENTE
         msg['To'] = EMAIL_DESTINATARIO
 
-        # Usiamo SMTP_SSL sulla porta 465 invece della porta 587
+        # Connessione SSL diretta sulla porta 465 (ottimale per Render)
         server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
         server.login(EMAIL_MITTENTE, EMAIL_PASSWORD)
         server.sendmail(EMAIL_MITTENTE, EMAIL_DESTINATARIO, msg.as_string())
         server.quit()
-        print("Email inviata con successo!")
+        print("Email inviata con successo!", flush=True)
     except Exception as e:
-        # Stampa l'errore nei log del server se qualcosa va storto
-        print(f"Errore durante l'invio dell'email: {e}")
+        print(f"Errore durante l'invio dell'email: {e}", flush=True)
 
 # =========================
 # SEND TELEGRAM
@@ -333,7 +328,6 @@ def webhook():
             result = generate(u["data"])
             send(chat_id, result)
             
-            # INVIO EMAIL AL PROPRIETARIO (Caso 1 Giorno)
             oggetto_mail = f"🆕 Nuovo Lead Telegram: {u['data']['name'].title()}"
             send_email(oggetto_mail, result)
             
@@ -345,7 +339,6 @@ def webhook():
             result = generate(u["data"])
             send(chat_id, result)
             
-            # INVIO EMAIL AL PROPRIETARIO (Caso 7 Giorni)
             oggetto_mail = f"🆕 Nuovo Lead Telegram: {u['data']['name'].title()}"
             send_email(oggetto_mail, result)
             
@@ -373,7 +366,6 @@ def webhook():
         result = generate(u["data"])
         send(chat_id, result)
 
-        # INVIO EMAIL AL PROPRIETARIO (Caso Giorni scelti a mano)
         oggetto_mail = f"🆕 Nuovo Lead Telegram: {u['data']['name'].title()}"
         send_email(oggetto_mail, result)
 
