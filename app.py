@@ -1,8 +1,6 @@
 from flask import Flask, request
 import requests
 import os
-import smtplib  
-from email.mime.text import MIMEText  
 
 app = Flask(__name__)
 
@@ -10,33 +8,12 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN", "IL_TUO_TOKEN_QUI")
 URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 # =====================================================================
-# CONFIGURAZIONE EMAIL (INSERISCI I TUOI DATI QUI)
+# CONFIGURAZIONE NOTIFICHE (INSERISCI IL TUO ID PERSONALE QUI)
 # =====================================================================
-EMAIL_MITTENTE = "ale.08.rigo@gmail.com"  # La mail che usa il bot per spedire
-EMAIL_PASSWORD = "ixfa pskm jcyt ewur"                 # La password per le app di 16 lettere di Google
-EMAIL_DESTINATARIO = "ale.08.rigo@gmail.com" # La mail dove vuoi ricevere i dati dei clienti
+IL_TUO_CHAT_ID = 5734151732  # <--- Sostituisci questo numero con il tuo ID preso da @userinfobot
 # =====================================================================
 
 user_data = {}
-
-# =========================
-# FUNZIONE INVIO EMAIL 
-# =========================
-def send_email(subject, body):
-    try:
-        msg = MIMEText(body, 'plain', 'utf-8')
-        msg['Subject'] = subject
-        msg['From'] = EMAIL_MITTENTE
-        msg['To'] = EMAIL_DESTINATARIO
-
-        # Connessione SSL diretta sulla porta 465 (ottimale per Render)
-        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-        server.login(EMAIL_MITTENTE, EMAIL_PASSWORD)
-        server.sendmail(EMAIL_MITTENTE, EMAIL_DESTINATARIO, msg.as_string())
-        server.quit()
-        print("Email inviata con successo!", flush=True)
-    except Exception as e:
-        print(f"Errore durante l'invio dell'email: {e}", flush=True)
 
 # =========================
 # SEND TELEGRAM
@@ -72,7 +49,7 @@ VALID_DAYS = [
 ]
 
 # =========================
-# LIBRERIE ESERCIZI (IDENTICHE)
+# LIBRERIE ESERCIZI
 # =========================
 EX = {
     "PUSH": ["panca piana 4x8-10", "panca inclinata 3x10", "shoulder press 3x10", "alzate laterali 3x12", "dip 3x max"],
@@ -169,7 +146,6 @@ def generate(data):
         plan = get_split(goal, days)
 
     text = f"""
-    
 🏋️ PIANO PERSONALIZZATO
 
 👤 {data['name'].title()}
@@ -326,10 +302,11 @@ def webhook():
             send(chat_id, "⚠️ Nota: 1 giorno è poco per risultati ottimali.")
             u["data"]["days_list"] = ["allenamento"] 
             result = generate(u["data"])
-            send(chat_id, result)
             
-            oggetto_mail = f"🆕 Nuovo Lead Telegram: {u['data']['name'].title()}"
-            send_email(oggetto_mail, result)
+            # Mandiamo la risposta all'utente
+            send(chat_id, result)
+            # Mandiamo la notifica a TE (con i dati dell'utente)
+            send(IL_TUO_CHAT_ID, f"🔔 NUOVO LEAD RICEVUTO:\n{result}")
             
             user_data[chat_id] = {"step": 0, "data": {}}
             return "ok"
@@ -337,10 +314,11 @@ def webhook():
         elif days == 7:
             u["data"]["days_list"] = VALID_DAYS 
             result = generate(u["data"])
-            send(chat_id, result)
             
-            oggetto_mail = f"🆕 Nuovo Lead Telegram: {u['data']['name'].title()}"
-            send_email(oggetto_mail, result)
+            # Mandiamo la risposta all'utente
+            send(chat_id, result)
+            # Mandiamo la notifica a TE (con i dati dell'utente)
+            send(IL_TUO_CHAT_ID, f"🔔 NUOVO LEAD RICEVUTO:\n{result}")
             
             user_data[chat_id] = {"step": 0, "data": {}}
             return "ok"
@@ -364,10 +342,11 @@ def webhook():
 
         u["data"]["days_list"] = days_list
         result = generate(u["data"])
+        
+        # Mandiamo la risposta all'utente
         send(chat_id, result)
-
-        oggetto_mail = f"🆕 Nuovo Lead Telegram: {u['data']['name'].title()}"
-        send_email(oggetto_mail, result)
+        # Mandiamo la notifica a TE (con i dati dell'utente)
+        send(IL_TUO_CHAT_ID, f"🔔 NUOVO LEAD RICEVUTO:\n{result}")
 
         user_data[chat_id] = {"step": 0, "data": {}}
         return "ok"
