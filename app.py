@@ -60,7 +60,11 @@ EX = {
     "FULL": ["squat 4x10", "panca 4x10", "rematore 4x10", "plank 3x45s"],
     "HIIT": ["burpees 12x", "squat jump 15x", "mountain climber 30s", "jumping jack 1 min"],
     "CARDIO": ["corsa 10-20 min", "corda 5 min", "jumping jack 1 min"],
-    "CORE": ["plank 3x45s", "crunch 3x20", "leg raise 3x15", "ab twist 3x30"]
+    "CORE": ["plank 3x45s", "crunch 3x20", "leg raise 3x15", "ab twist 3x30"],
+    # NUOVE SCHEDE RICOMPOSIZIONE (PALESTRA)
+    "RECOMP_FULL": ["squat 4x8", "panca piana 4x8", "rematore bilanciere 4x10", "affondi 3x12", "circuito core 3 min"],
+    "RECOMP_UPPER": ["panca inclinata 4x10", "trazioni o lat machine 4x10", "military press 3x10", "curl manubri + dip 3x12", "hiit tapis roulant 8 min"],
+    "RECOMP_LOWER": ["squat 4x10", "stacco rumeno 4x10", "leg press 3x12", "calf raises 4x15", "crunch inverso 3x20"]
 }
 
 EX_BODYWEIGHT = {
@@ -72,7 +76,11 @@ EX_BODYWEIGHT = {
     "FULL": ["burpees 4x12", "squat 4x15", "push up 4x max", "plank 3x60s"],
     "HIIT": ["burpees 15x", "jumping jack 1 min", "mountain climber 40s", "squat jump 15x"],
     "CARDIO": ["corsa sul posto 10-20 min", "jumping jack 2 min"],
-    "CORE": ["plank 3x45s", "crunch 3x20", "leg raise 3x15", "side plank 3x30s"]
+    "CORE": ["plank 3x45s", "crunch 3x20", "leg raise 3x15", "side plank 3x30s"],
+    # NUOVE SCHEDE RICOMPOSIZIONE (CORPO LIBERO)
+    "RECOMP_FULL": ["squat jump 4x12", "push up 4xmax", "inverted row 4x10", "affondi alternati 3x15", "burpees 3x10"],
+    "RECOMP_UPPER": ["push up 4xmax", "pike push up 3x10", "row sotto il tavolo 4x12", "plank up 3x12", "jumping jack 1 min"],
+    "RECOMP_LOWER": ["squat a corpo libero 4x20", "affondi 3x12", "glute bridge a 1 gamba 3x12", "wall sit 45s", "mountain climber 45s"]
 }
 
 EX_HOME = {
@@ -84,7 +92,11 @@ EX_HOME = {
     "FULL": ["goblet squat 4x12", "push up 4xmax", "rematore manubrio 4x10", "plank 3x60s"],
     "HIIT": ["burpees 15x", "jump squat 15x", "mountain climber 40s", "jumping jack 60s"],
     "CARDIO": ["camminata veloce 20 min", "corda 5 min"],
-    "CORE": ["plank 3x45s", "crunch 3x20", "leg raise 3x15", "side plank 3x30s"]
+    "CORE": ["plank 3x45s", "crunch 3x20", "leg raise 3x15", "side plank 3x30s"],
+    # NUOVE SCHEDE RICOMPOSIZIONE (CASA CON MANUBRI)
+    "RECOMP_FULL": ["goblet squat 4x10", "floor press manubri 4x10", "rematore manubri 4x10", "affondi manubri 3x12", "squat jump 12x"],
+    "RECOMP_UPPER": ["panca inclinata manubri 4x10", "rematore a un braccio 4x10", "shoulder press 3x10", "curl + tricipiti manubri 3x12", "jumping jack 1 min"],
+    "RECOMP_LOWER": ["goblet squat 4x12", "stacco rumeno manubri 4x10", "affondi camminati 3x12", "calf raises manubri 4x15", "plank 1 min"]
 }
 
 # =========================
@@ -98,6 +110,13 @@ def get_split(goal, days):
         if days == 4: return ["PUSH", "PULL", "LEGS", "FULL"]
         if days == 5: return ["PUSH", "PULL", "LEGS", "UPPER", "LOWER"]
         return ["PUSH", "PULL", "LEGS", "UPPER", "LOWER", "FULL", "CORE"]
+    elif goal == "ricomposizione corporea":
+        if days == 1: return ["RECOMP_FULL"]
+        if days == 2: return ["RECOMP_UPPER", "RECOMP_LOWER"]
+        if days == 3: return ["RECOMP_UPPER", "RECOMP_LOWER", "RECOMP_FULL"]
+        if days == 4: return ["RECOMP_UPPER", "RECOMP_LOWER", "RECOMP_UPPER", "RECOMP_LOWER"]
+        if days == 5: return ["RECOMP_UPPER", "RECOMP_LOWER", "RECOMP_UPPER", "RECOMP_LOWER", "RECOMP_FULL"]
+        return ["RECOMP_UPPER", "RECOMP_LOWER", "RECOMP_UPPER", "RECOMP_LOWER", "RECOMP_FULL", "CORE", "HIIT"]
     else:
         if days == 1: return ["HIIT"]
         if days == 2: return ["HIIT", "CARDIO"]
@@ -142,6 +161,13 @@ def generate(data):
             plan = plans.get(days, ["FULL"])
         else:
             plan = get_split(goal, days)
+    elif goal == "ricomposizione corporea":
+        if focus == "upper body":
+            plan = ["RECOMP_UPPER" if x % 2 == 0 else "RECOMP_FULL" for x in range(days)]
+        elif focus == "lower body":
+            plan = ["RECOMP_LOWER" if x % 2 == 0 else "RECOMP_FULL" for x in range(days)]
+        else:
+            plan = get_split(goal, days)
     else:
         plan = get_split(goal, days)
 
@@ -155,7 +181,7 @@ def generate(data):
 ⚖️ {data['weight']} kg
 📊 Livello: {data['level']}
 🏋️ Attrezzatura: {data['equipment']}
-🎯 Obiettivo: {data['goal']}
+🎯 Obiettivo: {data['goal'].title()}
 💪 Focus: {data['focus']}
 📅 Giorni d'allenamento: {days}
 """
@@ -270,14 +296,19 @@ def webhook():
         u["data"]["equipment"] = text
             
         u["step"] = 7
-        send(chat_id, "🎯 Qual è il tuo obiettivo?\n- massa\n- dimagrimento")
+        send(chat_id, "🎯 Qual è il tuo obiettivo?\n- massa\n- dimagrimento\n- ricomposizione corporea (entrambi)")
         return "ok"
 
     if u["step"] == 7:
-        if text not in ["massa", "dimagrimento"]:
-            send(chat_id, "❌ Obiettivo non valido. Scegli tra massa o dimagrimento:")
+        # Controlla tutte le varianti di inserimento per il nuovo step
+        if text in ["ricomposizione corporea", "entrambi", "ricomposizione"]:
+            u["data"]["goal"] = "ricomposizione corporea"
+        elif text in ["massa", "dimagrimento"]:
+            u["data"]["goal"] = text
+        else:
+            send(chat_id, "❌ Obiettivo non valido. Scegli tra massa, dimagrimento o ricomposizione corporea:")
             return "ok"
-        u["data"]["goal"] = text
+            
         u["step"] = 8
         send(chat_id, "💪 Scegli il focus muscolare:\n- upper body\n- lower body\n- full body")
         return "ok"
