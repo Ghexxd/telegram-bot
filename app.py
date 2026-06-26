@@ -48,56 +48,86 @@ VALID_DAYS = [
     "giovedi", "venerdi", "sabato", "domenica"
 ]
 
-# =========================
-# LIBRERIE ESERCIZI
-# =========================
+# =====================================================================
+# LIBRERIE ESERCIZI (Pulite da Set/Reps fisse per la scalabilità)
+# =====================================================================
+# I tag [F] indicano un esercizio Fondamentale (multiarticolare pesante)
+# I tag [C] indicano un esercizio di Isolamento/Complementare
+# I tag [T] indicano esercizi a tempo o circuiti
 EX = {
-    "PUSH": ["panca piana 4x8-10", "panca inclinata 3x10", "shoulder press 3x10", "alzate laterali 3x12", "dip 3x max"],
-    "PULL": ["lat machine 4x10", "rematore 4x10", "curl bicipiti 3x12", "face pull 3x15"],
-    "LEGS": ["squat 4x10", "affondi 3x12", "leg press 4x10", "stacco rumeno 3x10", "calf raises 4x15"],
-    "UPPER": ["panca 4x10", "lat machine 4x10", "shoulder press 3x10", "curl + tricipiti 3x12"],
-    "LOWER": ["squat 4x10", "leg press 4x10", "stacco rumeno 3x10", "calf raises 4x15"],
-    "FULL": ["squat 4x10", "panca 4x10", "rematore 4x10", "plank 3x45s"],
-    "HIIT": ["burpees 12x", "squat jump 15x", "mountain climber 30s", "jumping jack 1 min"],
-    "CARDIO": ["corsa 10-20 min", "corda 5 min", "jumping jack 1 min"],
-    "CORE": ["plank 3x45s", "crunch 3x20", "leg raise 3x15", "ab twist 3x30"],
-    # NUOVE SCHEDE RICOMPOSIZIONE (PALESTRA)
-    "RECOMP_FULL": ["squat 4x8", "panca piana 4x8", "rematore bilanciere 4x10", "affondi 3x12", "circuito core 3 min"],
-    "RECOMP_UPPER": ["panca inclinata 4x10", "trazioni o lat machine 4x10", "military press 3x10", "curl manubri + dip 3x12", "hiit tapis roulant 8 min"],
-    "RECOMP_LOWER": ["squat 4x10", "stacco rumeno 4x10", "leg press 3x12", "calf raises 4x15", "crunch inverso 3x20"]
+    "PUSH": [("panca piana", "[F]"), ("panca inclinata", "[C]"), ("shoulder press", "[F]"), ("alzate laterali", "[C]"), ("dip", "[F]")],
+    "PULL": [("lat machine", "[F]"), ("rematore bilanciere", "[F]"), ("curl bicipiti", "[C]"), ("face pull", "[C]")],
+    "LEGS": [("squat bilanciere", "[F]"), ("affondi manubri", "[C]"), ("leg press", "[F]"), ("stacco rumeno", "[F]"), ("calf raises", "[C]")],
+    "UPPER": [("panca piana", "[F]"), ("lat machine", "[F]"), ("shoulder press", "[F]"), ("curl + tricipiti", "[C]")],
+    "LOWER": [("squat bilanciere", "[F]"), ("leg press", "[F]"), ("stacco rumeno", "[F]"), ("calf raises", "[C]")],
+    "FULL": [("squat bilanciere", "[F]"), ("panca piana", "[F]"), ("rematore bilanciere", "[F]"), ("plank", "[T]")],
+    "HIIT": [("burpees", "[T]"), ("squat jump", "[T]"), ("mountain climber", "[T]"), ("jumping jack", "[T]")],
+    "CARDIO": [("corsa tapis roulant", "[T]"), ("corda", "[T]"), ("jumping jack", "[T]")],
+    "CORE": [("plank", "[T]"), ("crunch", "[C]"), ("leg raise", "[C]"), ("ab twist", "[C]")],
+    "RECOMP_FULL": [("squat bilanciere", "[F]"), ("panca piana", "[F]"), ("rematore bilanciere", "[F]"), ("affondi", "[C]"), ("circuito core", "[T]")],
+    "RECOMP_UPPER": [("panca inclinata", "[F]"), ("trazioni o lat machine", "[F]"), ("military press", "[F]"), ("curl manubri + dip", "[C]"), ("hiit tapis roulant", "[T]")],
+    "RECOMP_LOWER": [("squat bilanciere", "[F]"), ("stacco rumeno", "[F]"), ("leg press", "[C]"), ("calf raises", "[C]"), ("crunch inverso", "[C]")]
 }
 
 EX_BODYWEIGHT = {
-    "PUSH": ["push up 4x max", "push up inclinati 3x12", "diamond push up 3x10", "pike push up 3x10"],
-    "PULL": ["inverted row sotto tavolo 4x10", "isometric hold schiena 3x30s", "towel curl isometrico 3x12"],
-    "LEGS": ["squat a corpo libero 4x15", "affondi 3x12", "wall sit 3x45s", "glute bridge 3x15"],
-    "UPPER": ["push up 4x max", "pike push up 3x10", "row improvvisato 3x12", "plank 3x45s"],
-    "LOWER": ["squat 4x15", "affondi 3x12", "jump squat 3x12", "wall sit 3x60s"],
-    "FULL": ["burpees 4x12", "squat 4x15", "push up 4x max", "plank 3x60s"],
-    "HIIT": ["burpees 15x", "jumping jack 1 min", "mountain climber 40s", "squat jump 15x"],
-    "CARDIO": ["corsa sul posto 10-20 min", "jumping jack 2 min"],
-    "CORE": ["plank 3x45s", "crunch 3x20", "leg raise 3x15", "side plank 3x30s"],
-    # NUOVE SCHEDE RICOMPOSIZIONE (CORPO LIBERO)
-    "RECOMP_FULL": ["squat jump 4x12", "push up 4xmax", "inverted row 4x10", "affondi alternati 3x15", "burpees 3x10"],
-    "RECOMP_UPPER": ["push up 4xmax", "pike push up 3x10", "row sotto il tavolo 4x12", "plank up 3x12", "jumping jack 1 min"],
-    "RECOMP_LOWER": ["squat a corpo libero 4x20", "affondi 3x12", "glute bridge a 1 gamba 3x12", "wall sit 45s", "mountain climber 45s"]
+    "PUSH": [("push up", "[F]"), ("push up inclinati", "[C]"), ("diamond push up", "[C]"), ("pike push up", "[F]")],
+    "PULL": [("inverted row sotto tavolo", "[F]"), ("isometric hold schiena", "[T]"), ("towel curl isometrico", "[C]")],
+    "LEGS": [("squat a corpo libero", "[F]"), ("affondi", "[C]"), ("wall sit", "[T]"), ("glute bridge", "[C]")],
+    "UPPER": [("push up", "[F]"), ("pike push up", "[F]"), ("row improvvisato", "[C]"), ("plank", "[T]")],
+    "LOWER": [("squat a corpo libero", "[F]"), ("affondi", "[C]"), ("jump squat", "[T]"), ("wall sit", "[T]")],
+    "FULL": [("burpees", "[T]"), ("squat a corpo libero", "[F]"), ("push up", "[F]"), ("plank", "[T]")],
+    "HIIT": [("burpees", "[T]"), ("jumping jack", "[T]"), ("mountain climber", "[T]"), ("squat jump", "[T]")],
+    "CARDIO": [("corsa sul posto", "[T]"), ("jumping jack", "[T]")],
+    "CORE": [("plank", "[T]"), ("crunch", "[C]"), ("leg raise", "[C]"), ("side plank", "[T]")],
+    "RECOMP_FULL": [("squat jump", "[T]"), ("push up", "[F]"), ("inverted row", "[F]"), ("affondi alternati", "[C]"), ("burpees", "[T]")],
+    "RECOMP_UPPER": [("push up", "[F]"), ("pike push up", "[F]"), ("row sotto il tavolo", "[F]"), ("plank up", "[C]"), ("jumping jack", "[T]")],
+    "RECOMP_LOWER": [("squat a corpo libero", "[F]"), ("affondi", "[C]"), ("glute bridge a 1 gamba", "[C]"), ("wall sit", "[T]"), ("mountain climber", "[T]")]
 }
 
 EX_HOME = {
-    "PUSH": ["floor press con manubri 4x10", "push up 3xmax", "shoulder press manubri 4x10", "alzate laterali manubri 3x12"],
-    "PULL": ["trazioni alla sbarra 4xmax", "rematore manubrio 4x10", "curl manubrio 3x12", "shrug manubri 3x15"],
-    "LEGS": ["goblet squat 4x12", "affondi con manubri 3x12", "stacco rumeno manubri 4x10", "calf raises 4x20"],
-    "UPPER": ["floor press 4x10", "trazioni 4xmax", "shoulder press 4x10", "curl 3x12"],
-    "LOWER": ["goblet squat 4x12", "affondi 3x12", "stacco rumeno 4x10", "calf raises 4x20"],
-    "FULL": ["goblet squat 4x12", "push up 4xmax", "rematore manubrio 4x10", "plank 3x60s"],
-    "HIIT": ["burpees 15x", "jump squat 15x", "mountain climber 40s", "jumping jack 60s"],
-    "CARDIO": ["camminata veloce 20 min", "corda 5 min"],
-    "CORE": ["plank 3x45s", "crunch 3x20", "leg raise 3x15", "side plank 3x30s"],
-    # NUOVE SCHEDE RICOMPOSIZIONE (CASA CON MANUBRI)
-    "RECOMP_FULL": ["goblet squat 4x10", "floor press manubri 4x10", "rematore manubri 4x10", "affondi manubri 3x12", "squat jump 12x"],
-    "RECOMP_UPPER": ["panca inclinata manubri 4x10", "rematore a un braccio 4x10", "shoulder press 3x10", "curl + tricipiti manubri 3x12", "jumping jack 1 min"],
-    "RECOMP_LOWER": ["goblet squat 4x12", "stacco rumeno manubri 4x10", "affondi camminati 3x12", "calf raises manubri 4x15", "plank 1 min"]
+    "PUSH": [("floor press con manubri", "[F]"), ("push up", "[F]"), ("shoulder press manubri", "[F]"), ("alzate laterali manubri", "[C]")],
+    "PULL": [("trazioni alla sbarra", "[F]"), ("rematore manubrio", "[F]"), ("curl manubrio", "[C]"), ("shrug manubri", "[C]")],
+    "LEGS": [("goblet squat", "[F]"), ("affondi con manubri", "[C]"), ("stacco rumeno manubri", "[F]"), ("calf raises", "[C]")],
+    "UPPER": [("floor press manubri", "[F]"), ("trazioni", "[F]"), ("shoulder press manubri", "[F]"), ("curl manubrio", "[C]")],
+    "LOWER": [("goblet squat", "[F]"), ("affondi con manubri", "[C]"), ("stacco rumeno manubri", "[F]"), ("calf raises", "[C]")],
+    "FULL": [("goblet squat", "[F]"), ("push up", "[F]"), ("rematore manubrio", "[F]"), ("plank", "[T]")],
+    "HIIT": [("burpees", "[T]"), ("jump squat", "[T]"), ("mountain climber", "[T]"), ("jumping jack", "[T]")],
+    "CARDIO": [("camminata veloce", "[T]"), ("corda", "[T]")],
+    "CORE": [("plank", "[T]"), ("crunch", "[C]"), ("leg raise", "[C]"), ("side plank", "[T]")],
+    "RECOMP_FULL": [("goblet squat", "[F]"), ("floor press manubri", "[F]"), ("rematore manubri", "[F]"), ("affondi manubri", "[C]"), ("squat jump", "[T]")],
+    "RECOMP_UPPER": [("panca inclinata manubri", "[F]"), ("rematore a un braccio", "[F]"), ("shoulder press manubri", "[F]"), ("curl + tricipiti manubri", "[C]"), ("jumping jack", "[T]")],
+    "RECOMP_LOWER": [("goblet squat", "[F]"), ("stacco rumeno manubri", "[F]"), ("affondi camminati", "[C]"), ("calf raises manubri", "[C]"), ("plank", "[T]")]
 }
+
+# =====================================================================
+# VOLUME ENGINE (Il motore che adegua Serie e Ripetizioni)
+# =====================================================================
+def get_volume_string(ex_info, level):
+    ex_name, ex_type = ex_info
+    
+    # Configurazione parametri in base al livello
+    if level == "mai allenato":
+        if ex_type == "[F]": return f"{ex_name} 2x8 (Focus tecnica, buffer alto)"
+        if ex_type == "[C]": return f"{ex_name} 2x10 (Carico leggero)"
+        return f"{ex_name} 2x30s (Ritmo blando)"  # Per i tipi [T] (Tempo/Cardio)
+
+    elif level == "livello base":
+        if ex_type == "[F]": return f"{ex_name} 3x8"
+        if ex_type == "[C]": return f"{ex_name} 3x10"
+        return f"{ex_name} 3x45s"
+
+    elif level == "livello avanzato":
+        if ex_type == "[F]": return f"{ex_name} 4x8"
+        if ex_type == "[C]": return f"{ex_name} 3x12"
+        return f"{ex_name} 4x45s"
+
+    elif level == "esperto":
+        # Agli esperti diamo variazioni di intensità (es. piramidali o target reps più impegnativi)
+        if ex_type == "[F]": return f"{ex_name} 4x6 (Alta intensità di carico)"
+        if ex_type == "[C]": return f"{ex_name} 4x12 (Focus pompaggio muscolare)"
+        return f"{ex_name} 4x60s (Massima intensità)"
+
+    return f"{ex_name} 3x10"
 
 # =========================
 # SPLIT ENGINE
@@ -127,12 +157,19 @@ def get_split(goal, days):
 # =========================
 # WORKOUT BUILDER
 # =========================
-def build(day_type, equipment):
+def build(day_type, equipment, level):
     if equipment == "corpo libero":
-        return EX_BODYWEIGHT.get(day_type, ["riposo attivo"])
-    if equipment == "casa":
-        return EX_HOME.get(day_type, ["riposo attivo"])
-    return EX.get(day_type, ["riposo attivo"])
+        raw_exercises = EX_BODYWEIGHT.get(day_type, [])
+    elif equipment == "casa":
+        raw_exercises = EX_HOME.get(day_type, [])
+    else:
+        raw_exercises = EX.get(day_type, [])
+
+    if not raw_exercises:
+        return ["riposo attivo"]
+
+    # Genera le stringhe con serie e rep pesate sul livello d'esperienza
+    return [get_volume_string(ex, level) for ex in raw_exercises]
 
 # =========================
 # GENERATOR
@@ -141,6 +178,7 @@ def generate(data):
     days = data["days"]
     focus = data["focus"]
     goal = data["goal"]
+    level = data["level"]
     
     if goal == "massa":
         if focus == "upper body":
@@ -172,30 +210,29 @@ def generate(data):
         plan = get_split(goal, days)
 
     text = f"""
-🏋️ PIANO PERSONALIZZATO
+    🏋️ PIANO PERSONALIZZATO
 
-👤 {data['name'].title()}
-📧 {data['email']}
-🎂 {data['age']} anni
-📏 {data['height']} cm
-⚖️ {data['weight']} kg
-📊 Livello: {data['level']}
-🏋️ Attrezzatura: {data['equipment']}
-🎯 Obiettivo: {data['goal'].title()}
-💪 Focus: {data['focus']}
-📅 Giorni d'allenamento: {days}
-"""
+    👤 {data['name'].title()}
+    📧 {data['email']}
+    🎂 {data['age']} anni
+    📏 {data['height']} cm
+    ⚖️ {data['weight']} kg
+    📊 Livello: {data['level'].upper()}
+    🏋️ Attrezzatura: {data['equipment']}
+    🎯 Obiettivo: {data['goal'].title()}
+    💪 Focus: {data['focus']}
+    📅 Giorni d'allenamento: {days}
+    """
 
     for i in range(days):
         day = data["days_list"][i]
         type_day = plan[i] if i < len(plan) else "FULL"
 
         text += f"\n📅 {day.upper()} — {type_day}\n"
-        for ex in build(type_day, data["equipment"]):
+        for ex in build(type_day, data["equipment"], level):
             text += f"- {ex}\n"
         text += "\n-------------------\n"
 
-    # Aggiunta del disclaimer medico richiesto in coda al testo generato
     text += "\n⚠️ Questa scheda NON sostituisce il parere di un medico! Seguila soltanto se sei perfettamente in salute.\n"
 
     return text
@@ -300,7 +337,6 @@ def webhook():
         return "ok"
 
     if u["step"] == 7:
-        # Controlla tutte le varianti di inserimento per il nuovo step
         if text in ["ricomposizione corporea", "entrambi", "ricomposizione"]:
             u["data"]["goal"] = "ricomposizione corporea"
         elif text in ["massa", "dimagrimento"]:
