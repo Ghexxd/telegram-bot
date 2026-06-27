@@ -8,20 +8,20 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN", "IL_TUO_TOKEN_QUI")
 URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 # =====================================================================
-# CONFIGURAZIONE NOTIFICHE (INSERISCI IL TUO ID PERSONALE QUI)
+# CONFIGURAZIONE NOTIFICHE (IL TUO ID PERSONALE)
 # =====================================================================
-IL_TUO_CHAT_ID = 5734151732  # <--- Sostituisci questo numero con il tuo ID preso da @userinfobot
-# =====================================================================
+IL_TUO_CHAT_ID = 5734151732  
 
 user_data = {}
 
 # =========================
-# SEND TELEGRAM
+# SEND TELEGRAM (HTML ABILITATO)
 # =========================
 def send(chat_id, text):
     requests.post(f"{URL}/sendMessage", json={
         "chat_id": chat_id,
-        "text": text
+        "text": text,
+        "parse_mode": "HTML"  # <--- Permette di vedere i link cliccabili e i grassetti
     })
 
 def norm(t):
@@ -49,11 +49,8 @@ VALID_DAYS = [
 ]
 
 # =====================================================================
-# LIBRERIE ESERCIZI (Pulite da Set/Reps fisse per la scalabilità)
+# LIBRERIE ESERCIZI
 # =====================================================================
-# I tag [F] indicano un esercizio Fondamentale (multiarticolare pesante)
-# I tag [C] indicano un esercizio di Isolamento/Complementare
-# I tag [T] indicano esercizi a tempo o circuiti
 EX = {
     "PUSH": [("panca piana", "[F]"), ("panca inclinata", "[C]"), ("shoulder press", "[F]"), ("alzate laterali", "[C]"), ("dip", "[F]")],
     "PULL": [("lat machine", "[F]"), ("rematore bilanciere", "[F]"), ("curl bicipiti", "[C]"), ("face pull", "[C]")],
@@ -100,16 +97,15 @@ EX_HOME = {
 }
 
 # =====================================================================
-# VOLUME ENGINE (Il motore che adegua Serie e Ripetizioni)
+# VOLUME ENGINE
 # =====================================================================
 def get_volume_string(ex_info, level):
     ex_name, ex_type = ex_info
     
-    # Configurazione parametri in base al livello
     if level == "mai allenato":
         if ex_type == "[F]": return f"{ex_name} 2x8 (Focus tecnica, buffer alto)"
         if ex_type == "[C]": return f"{ex_name} 2x10 (Carico leggero)"
-        return f"{ex_name} 2x30s (Ritmo blando)"  # Per i tipi [T] (Tempo/Cardio)
+        return f"{ex_name} 2x30s (Ritmo blando)"
 
     elif level == "livello base":
         if ex_type == "[F]": return f"{ex_name} 3x8"
@@ -122,7 +118,6 @@ def get_volume_string(ex_info, level):
         return f"{ex_name} 4x45s"
 
     elif level == "esperto":
-        # Agli esperti diamo variazioni di intensità (es. piramidali o target reps più impegnativi)
         if ex_type == "[F]": return f"{ex_name} 4x6 (Alta intensità di carico)"
         if ex_type == "[C]": return f"{ex_name} 4x12 (Focus pompaggio muscolare)"
         return f"{ex_name} 4x60s (Massima intensità)"
@@ -168,12 +163,11 @@ def build(day_type, equipment, level):
     if not raw_exercises:
         return ["riposo attivo"]
 
-    # Genera le stringhe con serie e rep pesate sul livello d'esperienza
     return [get_volume_string(ex, level) for ex in raw_exercises]
 
-# =========================
-# GENERATOR
-# =========================
+# =====================================================================
+# GENERATOR (CON PUBBLICITÀ A @GymMethod2026Shop IN CIMA)
+# =====================================================================
 def generate(data):
     days = data["days"]
     focus = data["focus"]
@@ -209,31 +203,49 @@ def generate(data):
     else:
         plan = get_split(goal, days)
 
-    text = f"""
-    🏋️ PIANO PERSONALIZZATO
+    # Box pubblicitario iniziale
+    text = """🔥 <b>INTEGRATORI E ATTREZZATURA SCONTATI?</b> 🔥
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+Prima di scoprire la tua scheda, entra nel nostro <b>Canale Telegram Ufficiale</b> @GymMethod2026Shop dove scoviamo ogni giorno i migliori sconti Amazon su <i>creatina, proteine e attrezzi per la tua Home Gym!</i>
 
-    👤 {data['name'].title()}
-    📧 {data['email']}
-    🎂 {data['age']} anni
-    📏 {data['height']} cm
-    ⚖️ {data['weight']} kg
-    📊 Livello: {data['level'].upper()}
-    🏋️ Attrezzatura: {data['equipment']}
-    🎯 Obiettivo: {data['goal'].title()}
-    💪 Focus: {data['focus']}
-    📅 Giorni d'allenamento: {days}
-    """
+👉 <a href="https://t.me/GymMethod2026Shop">CLICCA QUI PER ENTRARE NEL CANALE SHOP</a> 👈
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🏋️ <b>IL TUO PIANO PERSONALIZZATO</b>
+
+👤 <b>Nome:</b> {name}
+📧 <b>Email:</b> {email}
+🎂 <b>Età:</b> {age} anni
+📏 <b>Altezza:</b> {height} cm
+⚖️ <b>Peso:</b> {weight} kg
+📊 <b>Livello:</b> {level}
+🏋️ <b>Attrezzatura:</b> {equipment}
+🎯 <b>Obiettivo:</b> {goal}
+💪 <b>Focus:</b> {focus}
+📅 <b>Giorni d'allenamento:</b> {days}
+""".format(
+        name=data['name'].title(),
+        email=data['email'],
+        age=data['age'],
+        height=data['height'],
+        weight=data['weight'],
+        level=data['level'].upper(),
+        equipment=data['equipment'].title(),
+        goal=data['goal'].title(),
+        focus=data['focus'].title(),
+        days=days
+    )
 
     for i in range(days):
         day = data["days_list"][i]
         type_day = plan[i] if i < len(plan) else "FULL"
 
-        text += f"\n📅 {day.upper()} — {type_day}\n"
+        text += f"\n📅 <b>{day.upper()} — {type_day}</b>\n"
         for ex in build(type_day, data["equipment"], level):
             text += f"- {ex}\n"
-        text += "\n-------------------\n"
+        text += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 
-    text += "\n⚠️ Questa scheda NON sostituisce il parere di un medico! Seguila soltanto se sei perfettamente in salute.\n"
+    text += "\n⚠️ <i>Questa scheda NON sostituisce il parere di un medico! Seguila soltanto se sei perfettamente in salute.</i>\n"
 
     return text
 
@@ -419,4 +431,4 @@ def webhook():
 
 @app.route("/")
 def home():
-    return "Bot attivo"
+    return "Bot attivo e pubblicità impostata su @GymMethod2026Shop"
