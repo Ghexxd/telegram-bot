@@ -79,6 +79,7 @@ EX = {
     "RECOMP_FULL": [("squat bilanciere", "[F]"), ("panca piana", "[F]"), ("rematore manubri", "[F]"), ("affondi bulgari", "[C]"), ("circuito core intensive", "[T]")],
     "RECOMP_UPPER": [("panca inclinata", "[F]"), ("lat machine stretto", "[F]"), ("military press", "[F]"), ("alzate laterali + alzate 90°", "[C]"), ("hiit tapis roulant", "[T]")],
     "RECOMP_LOWER": [("squat bilanciere", "[F]"), ("stacco rumeno bilanciere", "[F]"), ("leg press", "[C]"), ("calf raises", "[C]"), ("crunch inverso addome", "[C]")]
+
 }
 
 EX_BODYWEIGHT = {
