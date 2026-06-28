@@ -283,10 +283,12 @@ WEBHOOK_SECRET_TOKEN = os.environ.get("WEBHOOK_SECRET", "Zanzibar-secret-ostregh
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
-    if token != WEBHOOK_SECRET_TOKEN:
-        return "Non autorizzato", 403
+    # CANCELLA O COMMENTA QUESTE 3 RIGHE:
+    # token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
+    # if token != WEBHOOK_SECRET_TOKEN:
+    #     return "Non autorizzato", 403
 
+    # IL CODICE DEVE RIPARTIRE DIRETTAMENTE DA QUI:
     data = request.json
     if not data or "message" not in data:
         return "ok"
