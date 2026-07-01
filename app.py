@@ -182,6 +182,9 @@ def build(day_type, equipment, level):
                     vol_str = get_volume_string(ex_name, ex_type, level)
                     if vol_str not in output_exercises:
                         output_exercises.append(vol_str)
+            else:
+                print(f"🔴 ERRORE MUSCLEWIKI: Stato {res.status_code} - Risposta: {res.text}")
+                
         except Exception as e:
             print(f"Errore chiamata MuscleWiki: {e}")
             break
@@ -524,5 +527,7 @@ def webhook():
 def home():
     return "Bot attivo e collegato correttamente a MuscleWiki e Supabase DB!"
 
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
