@@ -10,16 +10,15 @@ app = Flask(__name__)
 # =====================================================================
 # CONFIGURAZIONE CREDENZIALI DIRETTE (HARDCODED)
 # =====================================================================
-# ⚠️ SOSTITUISCI I VALORI DENTRO LE VIRGOLETTE CON I TUOI DATI REALI
-BOT_TOKEN = "IL_TUO_TOKEN_TELEGRAM_REALE" 
+BOT_TOKEN = "8915760792:AAG8rKthk_1FeqPaY1T7lr90r0SkvCH5OG4"
 URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 IL_TUO_CHAT_ID = 5734151732
 WEBHOOK_SECRET_TOKEN = "Zanzibar-secret-ostreghetta"
 
 # Credenziali MuscleWiki e Supabase Database inserite direttamente
-MUSCLEWIKI_API_KEY = "LA_TUA_CHIAVE_DI_MUSCLEWIKI"
+MUSCLEWIKI_API_KEY = "mw_pquh2fC8Q8xlcq0_IgpubfFEAt4NZYkFR-piIs_Vud4"
 SUPABASE_URL = "https://kzfapegnsumqkdoytjzk.supabase.co"
-SUPABASE_KEY = "LA_TUA_CHIAVE_ANON_PUBLIC_LUNGHISSIMA_DI_SUPABASE"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6ZmFwZWduc3VtcWtkb3l0anprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MzMwNTQsImV4cCI6MjA5ODUwOTA1NH0.R-5SMP-La7Y5i80_MScJd9X0j4G_z34Z5iGRYsa4294"
 
 # Inizializzazione del client Supabase per la Cache
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -126,7 +125,7 @@ def build(day_type, equipment, level):
     now = datetime.utcnow()
     limite_30_giorni = (now - timedelta(days=30)).isoformat()
 
-    # 1. TENTATIVO DI LETTURA DALLA CACHE DI SUPABASE (Costo API = 0)
+    # 1. TENTATIVO DI LETTURA DALLA CACHE DI SUPABASE
     try:
         query = supabase.table("muscle_cache").select("exercises, created_at").eq("cache_key", cache_key).gt("created_at", limite_30_giorni).execute()
         if query.data:
