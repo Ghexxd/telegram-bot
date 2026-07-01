@@ -7,16 +7,19 @@ from supabase import create_client, Client
 
 app = Flask(__name__)
 
-# Configurazione variabili d'ambiente (Prese da Render)
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "IL_TUO_TOKEN_QUI")
+# =====================================================================
+# CONFIGURAZIONE CREDENZIALI DIRETTE (HARDCODED)
+# =====================================================================
+# ⚠️ SOSTITUISCI I VALORI DENTRO LE VIRGOLETTE CON I TUOI DATI REALI
+BOT_TOKEN = "IL_TUO_TOKEN_TELEGRAM_REALE" 
 URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
-IL_TUO_CHAT_ID = int(os.environ.get("AMMINISTRATORE_CHAT_ID", "5734151732"))
-WEBHOOK_SECRET_TOKEN = os.environ.get("WEBHOOK_SECRET", "Zanzibar-secret-ostreghetta")
+IL_TUO_CHAT_ID = 5734151732
+WEBHOOK_SECRET_TOKEN = "Zanzibar-secret-ostreghetta"
 
-# Credenziali MuscleWiki e Supabase Database
-MUSCLEWIKI_API_KEY = os.environ.get("MUSCLEWIKI_API_KEY", "LA_TUA_CHIAVE_MUSCLEWIKI_QUI")
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "IL_TUO_SUPABASE_URL_QUI")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "LA_TUA_SUPABASE_KEY_QUI")
+# Credenziali MuscleWiki e Supabase Database inserite direttamente
+MUSCLEWIKI_API_KEY = "LA_TUA_CHIAVE_DI_MUSCLEWIKI"
+SUPABASE_URL = "https://kzfapegnsumqkdoytjzk.supabase.co"
+SUPABASE_KEY = "LA_TUA_CHIAVE_ANON_PUBLIC_LUNGHISSIMA_DI_SUPABASE"
 
 # Inizializzazione del client Supabase per la Cache
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -128,7 +131,6 @@ def build(day_type, equipment, level):
         query = supabase.table("muscle_cache").select("exercises, created_at").eq("cache_key", cache_key).gt("created_at", limite_30_giorni).execute()
         if query.data:
             cached_exercises = query.data[0]["exercises"]
-            # Calcoliamo i volumi in base al livello attuale richiesto dall'utente
             return [get_volume_string(ex["name"], ex["type"], level) for ex in cached_exercises]
     except Exception as e:
         print(f"Errore lettura cache Supabase: {e}")
@@ -162,7 +164,7 @@ def build(day_type, equipment, level):
     raw_exercises_to_cache = []
     output_exercises = []
     
-    for muscle in muscle_groups[:2]: # Limitiamo a 2 gruppi per sessione per non creare schede infinite
+    for muscle in muscle_groups[:2]: 
         params = {
             "muscle": muscle,
             "equipment": mw_equipment,
@@ -175,7 +177,6 @@ def build(day_type, equipment, level):
                     ex_name = item.get("name", "Esercizio")
                     ex_type = "[F]" if any(x in ex_name.lower() for x in ["panca", "squat", "stacco"]) else "[C]"
                     
-                    # Prepariamo la struttura pulita per salvarla nel DB
                     if not any(e["name"] == ex_name for e in raw_exercises_to_cache):
                         raw_exercises_to_cache.append({"name": ex_name, "type": ex_type})
                         
@@ -189,9 +190,7 @@ def build(day_type, equipment, level):
     # 3. SALVIAMO I DATI SU SUPABASE PER I PROSSIMI 30 GIORNI
     if raw_exercises_to_cache:
         try:
-            # Puliamo vecchie copie scadute della stessa chiave
             supabase.table("muscle_cache").delete().eq("cache_key", cache_key).execute()
-            # Scriviamo il nuovo record
             supabase.table("muscle_cache").insert({
                 "cache_key": cache_key,
                 "exercises": raw_exercises_to_cache,
