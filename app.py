@@ -2,17 +2,24 @@ from flask import Flask, request
 import requests
 import os
 import re
+from datetime import datetime, timedelta
+from supabase import create_client, Client
 
 app = Flask(__name__)
 
-# Configurazione tramite variabili d'ambiente con fallback di sicurezza
+# Configurazione variabili d'ambiente (Prese da Render)
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "IL_TUO_TOKEN_QUI")
 URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 IL_TUO_CHAT_ID = int(os.environ.get("AMMINISTRATORE_CHAT_ID", "5734151732"))
 WEBHOOK_SECRET_TOKEN = os.environ.get("WEBHOOK_SECRET", "Zanzibar-secret-ostreghetta")
 
-# INSERISCI QUI LA TUA CHIAVE COPIATA DALLA DASHBOARD DI MUSCLEWIKI (Oppure impostala come variabile d'ambiente su Render)
+# Credenziali MuscleWiki e Supabase Database
 MUSCLEWIKI_API_KEY = os.environ.get("MUSCLEWIKI_API_KEY", "LA_TUA_CHIAVE_MUSCLEWIKI_QUI")
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "IL_TUO_SUPABASE_URL_QUI")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "LA_TUA_SUPABASE_KEY_QUI")
+
+# Inizializzazione del client Supabase per la Cache
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 user_data = {}
 
@@ -109,18 +116,31 @@ def get_split(goal, days):
         else: return ["HIIT", "CARDIO", "CORE", "FULL", "HIIT", "CARDIO", "CORE"][:days]
 
 # =====================================================================
-# INTERFACCIA APPRENDIMENTO MUSCLEWIKI API
+# ENGINE CACHE & INTEGRAZIONE MUSCLEWIKI
 # =====================================================================
 def build(day_type, equipment, level):
-    # 1. Mappatura Attrezzatura per MuscleWiki
+    cache_key = f"{day_type}_{equipment}"
+    now = datetime.utcnow()
+    limite_30_giorni = (now - timedelta(days=30)).isoformat()
+
+    # 1. TENTATIVO DI LETTURA DALLA CACHE DI SUPABASE (Costo API = 0)
+    try:
+        query = supabase.table("muscle_cache").select("exercises, created_at").eq("cache_key", cache_key).gt("created_at", limite_30_giorni).execute()
+        if query.data:
+            cached_exercises = query.data[0]["exercises"]
+            # Calcoliamo i volumi in base al livello attuale richiesto dall'utente
+            return [get_volume_string(ex["name"], ex["type"], level) for ex in cached_exercises]
+    except Exception as e:
+        print(f"Errore lettura cache Supabase: {e}")
+
+    # 2. SE NON C'È NELLA CACHE, CHIEDIAMO A MUSCLEWIKI API
     eq_map = {
         "corpo libero": "bodyweight",
         "casa": "dumbbell",
-        "palestra": "barbell" # L'API accetta singoli filtri principali, "barbell" o "machine"
+        "palestra": "barbell"
     }
     mw_equipment = eq_map.get(equipment, "bodyweight")
 
-    # 2. Mappatura Categorie -> Muscoli Specifici
     muscle_groups = []
     if "PUSH" in day_type or "UPPER" in day_type:
         muscle_groups = ["chest", "shoulders", "triceps"]
@@ -130,20 +150,19 @@ def build(day_type, equipment, level):
         muscle_groups = ["quads", "hamstrings", "glutes", "calves"]
     elif "CORE" in day_type:
         muscle_groups = ["abs"]
-    else: # FULL, HIIT, CARDIO o fallback
+    else:
         muscle_groups = ["chest", "lats", "quads", "abs"]
 
-    # 3. Chiamata API dinamica a MuscleWiki (Endpoint localizzato in Italiano)
     api_url = "https://api.musclewiki.com/v1/exercises"
     headers = {
         "Authorization": f"Bearer {MUSCLEWIKI_API_KEY}",
         "Accept-Language": "it"
     }
 
+    raw_exercises_to_cache = []
     output_exercises = []
     
-    # Interroghiamo l'API per i muscoli necessari al tipo di giornata
-    for muscle in muscle_groups[:2]: # Limitiamo a 2 gruppi muscolari principali per giornata per non saturare i testi
+    for muscle in muscle_groups[:2]: # Limitiamo a 2 gruppi per sessione per non creare schede infinite
         params = {
             "muscle": muscle,
             "equipment": mw_equipment,
@@ -152,13 +171,14 @@ def build(day_type, equipment, level):
         try:
             res = requests.get(api_url, headers=headers, params=params, timeout=8)
             if res.status_code == 200:
-                data = res.json()
-                # Se l'API restituisce una lista di esercizi, li formattiamo
-                for item in data.get("exercises", []):
+                for item in res.json().get("exercises", []):
                     ex_name = item.get("name", "Esercizio")
-                    # Determina in automatico se è fondamentale [F] o complementare [C]
-                    ex_type = "[F]" if "panca" in ex_name.lower() or "squat" in ex_name.lower() or "stacco" in ex_name.lower() else "[C]"
+                    ex_type = "[F]" if any(x in ex_name.lower() for x in ["panca", "squat", "stacco"]) else "[C]"
                     
+                    # Prepariamo la struttura pulita per salvarla nel DB
+                    if not any(e["name"] == ex_name for e in raw_exercises_to_cache):
+                        raw_exercises_to_cache.append({"name": ex_name, "type": ex_type})
+                        
                     vol_str = get_volume_string(ex_name, ex_type, level)
                     if vol_str not in output_exercises:
                         output_exercises.append(vol_str)
@@ -166,7 +186,21 @@ def build(day_type, equipment, level):
             print(f"Errore chiamata MuscleWiki: {e}")
             break
 
-    # Fallback se l'API non risponde o non trova esercizi specifici
+    # 3. SALVIAMO I DATI SU SUPABASE PER I PROSSIMI 30 GIORNI
+    if raw_exercises_to_cache:
+        try:
+            # Puliamo vecchie copie scadute della stessa chiave
+            supabase.table("muscle_cache").delete().eq("cache_key", cache_key).execute()
+            # Scriviamo il nuovo record
+            supabase.table("muscle_cache").insert({
+                "cache_key": cache_key,
+                "exercises": raw_exercises_to_cache,
+                "created_at": now.isoformat()
+            }).execute()
+        except Exception as e:
+            print(f"Errore scrittura cache Supabase: {e}")
+
+    # Fallback d'emergenza se l'API e la cache falliscono insieme
     if not output_exercises:
         return [
             f"Squat a {equipment} 3x10", 
@@ -175,7 +209,7 @@ def build(day_type, equipment, level):
             f"Plank addome 3x45s"
         ]
 
-    return output_exercises[:6] # Massimo 6 esercizi a scheda per sessione
+    return output_exercises[:6]
 
 # =====================================================================
 # GENERATOR
@@ -224,7 +258,7 @@ Prima di scoprire la tua scheda, entra nel nostro <b>Canale Telegram Ufficiale</
 ⚠️ <i>Nota: I prezzi e gli sconti all'interno del canale sono aggiornati costantemente ma sono da intendersi come <b>prezzi validi esclusivamente al momento dell'invio del messaggio</b>. Le promozioni di Amazon possono variare o scadere rapidamente in base alla disponibilità.</i>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🏋️ <b>IL TUO PIANO PERSONALIZZATO (Powered by MuscleWiki)</b>
+🏋️ <b>IL TUO PIANO PERSONALIZZATO (Smart Cache Active)</b>
 
 👤 <b>Nome:</b> {name}
 📧 <b>Email:</b> {email}
@@ -298,7 +332,7 @@ def webhook():
         return "ok"
 
     # ==========================================
-    # MACCHINA A STATI
+    # MACCHINA A STATI (Raccolta Dati Lead)
     # ==========================================
     if u["step"] == 1:
         u["data"]["name"] = raw_text
@@ -490,4 +524,7 @@ def webhook():
 
 @app.route("/")
 def home():
-    return "Bot attivo e collegato a MuscleWiki API!"
+    return "Bot attivo e collegato correttamente a MuscleWiki e Supabase DB!"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
