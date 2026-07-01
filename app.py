@@ -273,7 +273,7 @@ Prima di scoprire la tua scheda, entra nel nostro <b>Canale Telegram Ufficiale</
             text += f"- {ex}\n"
         text += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 
-    text += "\n⚠️ <i>Questa scheda NON sostituisce il parere di un medico! Seguila soltanto se sei perfettamente in salute.</i>\n"
+    text += "\n⚠️ <i>Questa scheda NON sostituisce il parere di un professionista! Seguila soltanto se sei perfettamente in salute.</i>\n"
     return text
 
 # =========================
