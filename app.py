@@ -5,13 +5,14 @@ import re
 
 app = Flask(__name__)
 
+# Configurazione tramite variabili d'ambiente con fallback di sicurezza
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "IL_TUO_TOKEN_QUI")
 URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
+IL_TUO_CHAT_ID = int(os.environ.get("AMMINISTRATORE_CHAT_ID", "5734151732"))
+WEBHOOK_SECRET_TOKEN = os.environ.get("WEBHOOK_SECRET", "Zanzibar-secret-ostreghetta")
 
-# =====================================================================
-# CONFIGURAZIONE NOTIFICHE (IL TUO ID PERSONALE)
-# =====================================================================
-IL_TUO_CHAT_ID = 5734151732  
+# INSERISCI QUI LA TUA CHIAVE COPIATA DALLA DASHBOARD DI MUSCLEWIKI (Oppure impostala come variabile d'ambiente su Render)
+MUSCLEWIKI_API_KEY = os.environ.get("MUSCLEWIKI_API_KEY", "LA_TUA_CHIAVE_MUSCLEWIKI_QUI")
 
 user_data = {}
 
@@ -28,9 +29,10 @@ def send(chat_id, text, reply_markup=None):
         payload["reply_markup"] = reply_markup
         
     try:
-        requests.post(f"{URL}/sendMessage", json=payload, timeout=10)
+        response = requests.post(f"{URL}/sendMessage", json=payload, timeout=10)
+        response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        print(f"Errore nell'invio del messaggio: {e}")
+        print(f"Errore nell'invio del messaggio a {chat_id}: {e}")
 
 def norm(t):
     if not t:
@@ -50,13 +52,12 @@ def is_num(x):
 # VALIDATION
 # =========================
 def valid_age(a): return 10 <= a <= 99
+def valid_weight(w): return 40 <= w <= 300
+def valid_height(h): return 50 <= h <= 300  
 
 def is_valid_email(email):
     pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
     return bool(re.match(pattern, email))
-
-def valid_weight(w): return 40 <= w <= 300
-def valid_height(h): return 50 <= h <= 300  
 
 VALID_DAYS = [
     "lunedi", "martedi", "mercoledi",
@@ -64,60 +65,9 @@ VALID_DAYS = [
 ]
 
 # =====================================================================
-# LIBRERIE ESERCIZI AMPLIATE
-# =====================================================================
-EX = {
-    "PUSH": [("panca piana bilanciere", "[F]"), ("panca inclinata manubri", "[C]"), ("military press", "[F]"), ("dip alle parallele", "[F]"), ("alzate laterali cavi", "[C]"), ("pushdown tricipiti", "[C]")],
-    "PULL": [("trazioni alla sbarra", "[F]"), ("lat machine avanti", "[F]"), ("rematore bilanciere", "[F]"), ("pulley basso", "[C]"), ("curl bicipiti bilanciere", "[C]"), ("face pull cavi", "[C]")],
-    "LEGS": [("squat bilanciere", "[F]"), ("stacco da terra", "[F]"), ("leg press 45°", "[F]"), ("leg curl", "[C]"), ("affondi camminati", "[C]"), ("calf raises seduto", "[C]")],
-    "UPPER": [("panca piana bilanciere", "[F]"), ("trazioni alla sbarra", "[F]"), ("shoulder press manubri", "[F]"), ("rematore manubrio", "[F]"), ("curl bicipiti + kickback tricipiti", "[C]")],
-    "LOWER": [("squat bilanciere", "[F]"), ("stacco rumeno", "[F]"), ("leg extension", "[C]"), ("leg curl sdraiato", "[C]"), ("calf raises in piedi", "[C]")],
-    "FULL": [("squat bilanciere", "[F]"), ("panca piana", "[F]"), ("trazioni o lat machine", "[F]"), ("military press", "[F]"), ("plank addome", "[T]")],
-    "HIIT": [("burpees", "[T]"), ("squat jump", "[T]"), ("mountain climber", "[T]"), ("jumping jack", "[T]"), ("thruster con manubri", "[T]")],
-    "CARDIO": [("corsa tapis roulant", "[T]"), ("ellittica o cyclette", "[T]"), ("corda", "[T]"), ("jumping jack", "[T]")],
-    "CORE": [("plank frontale", "[T]"), ("crunch inverso", "[C]"), ("leg raise alla sbarra", "[C]"), ("ab wheel rollout", "[C]"), ("russian twist", "[C]")],
-    "RECOMP_FULL": [("squat bilanciere", "[F]"), ("panca piana", "[F]"), ("rematore manubri", "[F]"), ("affondi bulgari", "[C]"), ("circuito core intensive", "[T]")],
-    "RECOMP_UPPER": [("panca inclinata", "[F]"), ("lat machine stretto", "[F]"), ("military press", "[F]"), ("alzate laterali + alzate 90°", "[C]"), ("hiit tapis roulant", "[T]")],
-    "RECOMP_LOWER": [("squat bilanciere", "[F]"), ("stacco rumeno bilanciere", "[F]"), ("leg press", "[C]"), ("calf raises", "[C]"), ("crunch inverso addome", "[C]")]
-
-}
-
-EX_BODYWEIGHT = {
-    "PUSH": [("push up standard", "[F]"), ("pike push up (spalle)", "[F]"), ("push up inclinati", "[C]"), ("diamond push up", "[C]"), ("dip su sedia", "[C]")],
-    "PULL": [("inverted row sotto tavolo", "[F]"), ("pull up alla porta o sbarra", "[F]"), ("isometric hold schiena", "[T]"), ("towel curl bicipiti", "[C]")],
-    "LEGS": [("squat a corpo libero", "[F]"), ("affondi alternati", "[C]"), ("affondi bulgari (piede su sedia)", "[C]"), ("wall sit (isometria)", "[T]"), ("glute bridge a una gamba", "[C]")],
-    "UPPER": [("push up", "[F]"), ("inverted row", "[F]"), ("pike push up", "[F]"), ("hindu push up", "[C]"), ("plank up", "[T]")],
-    "LOWER": [("squat a corpo libero", "[F]"), ("affondi posteriori", "[C]"), ("jump squat esplosivi", "[T]"), ("wall sit", "[T]"), ("calf raises a una gamba", "[C]")],
-    "FULL": [("burpees", "[T]"), ("squat a corpo libero", "[F]"), ("push up", "[F]"), ("inverted row", "[F]"), ("plank", "[T]")],
-    "HIIT": [("burpees", "[T]"), ("jumping jack", "[T]"), ("mountain climber", "[T]"), ("squat jump", "[T]"), ("high knees / ginocchia alte", "[T]")],
-    "CARDIO": [("corsa sul posto", "[T]"), ("jumping jack", "[T]"), ("shadow boxing / kick", "[T]")],
-    "CORE": [("plank tradizionale", "[T]"), ("crunch a terra", "[C]"), ("leg raise sdraiato", "[C]"), ("side plank destro/sinistro", "[T]")],
-    "RECOMP_FULL": [("squat jump", "[T]"), ("push up", "[F]"), ("inverted row", "[F]"), ("affondi alternati", "[C]"), ("burpees svuotafiato", "[T]")],
-    "RECOMP_UPPER": [("push up standard", "[F]"), ("pike push up", "[F]"), ("row sotto il tavolo", "[F]"), ("plank walk", "[C]"), ("jumping jack", "[T]")],
-    "RECOMP_LOWER": [("squat corpo libero", "[F]"), ("affondi bulgari", "[C]"), ("glute bridge", "[C]"), ("wall sit", "[T]"), ("mountain climber", "[T]")]
-}
-
-EX_HOME = {
-    "PUSH": [("floor press con manubri", "[F]"), ("shoulder press manubri", "[F]"), ("push up", "[F]"), ("panca inclinata manubri", "[C]"), ("alzate laterali manubri", "[C]")],
-    "PULL": [("trazioni alla sbarra", "[F]"), ("rematore con manubri", "[F]"), ("rematore a un braccio", "[F]"), ("curl bicipiti alternato", "[C]"), ("hammer curl", "[C]")],
-    "LEGS": [("goblet squat con manubrio", "[F]"), ("stacco rumeno manubri", "[F]"), ("affondi con manubri", "[C]"), ("affondi bulgari", "[C]"), ("calf raises con peso", "[C]")],
-    "UPPER": [("floor press manubri", "[F]"), ("rematore manubri", "[F]"), ("shoulder press manubri", "[F]"), ("curl bicipiti", "[C]"), ("kickback tricipiti", "[C]")],
-    "LOWER": [("goblet squat", "[F]"), ("stacco rumeno manubri", "[F]"), ("affondi incrociati", "[C]"), ("leg curl con manubrio tra i piedi", "[C]"), ("calf raises", "[C]")],
-    "FULL": [("goblet squat", "[F]"), ("floor press manubri", "[F]"), ("rematore manubri", "[F]"), ("clean & press manubri", "[F]"), ("plank", "[T]")],
-    "HIIT": [("burpees", "[T]"), ("jump squat con peso leggero", "[T]"), ("mountain climber", "[T]"), ("kettlebell/dumbbell swing", "[T]")],
-    "CARDIO": [("camminata veloce / corsa", "[T]"), ("salti con la corda", "[T]"), ("shadow boxing con pesetti", "[T]")],
-    "CORE": [("plank frontale", "[T]"), ("crunch a terra", "[C]"), ("leg raise con piccolo peso", "[C]"), ("russian twist con manubrio", "[C]")],
-    "RECOMP_FULL": [("goblet squat", "[F]"), ("floor press manubri", "[F]"), ("rematore manubri", "[F]"), ("affondi manubri", "[C]"), ("squat jump", "[T]")],
-    "RECOMP_UPPER": [("panca inclinata manubri", "[F]"), ("rematore a un braccio", "[F]"), ("shoulder press manubri", "[F]"), ("curl + french press manubri", "[C]"), ("jumping jack", "[T]")],
-    "RECOMP_LOWER": [("goblet squat", "[F]"), ("stacco rumeno manubri", "[F]"), ("affondi camminati manubri", "[C]"), ("calf raises manubri", "[C]"), ("plank", "[T]")]
-}
-
-# =====================================================================
 # VOLUME ENGINE
 # =====================================================================
-def get_volume_string(ex_info, level):
-    ex_name, ex_type = ex_info
-    
+def get_volume_string(ex_name, ex_type, level):
     if level == "mai allenato":
         if ex_type == "[F]": return f"{ex_name} 2x8 (Focus tecnica, buffer alto)"
         if ex_type == "[C]": return f"{ex_name} 2x10 (Carico leggero)"
@@ -141,56 +91,91 @@ def get_volume_string(ex_info, level):
     return f"{ex_name} 3x10"
 
 # =====================================================================
-# SPLIT ENGINE (9 COMBINAZIONI STRUTTURATE)
+# SPLIT ENGINE
 # =====================================================================
 def get_split(goal, days):
     days = int(days)
-    
-    # MASSA
     if goal == "massa":
-        if days <= 2:
-            return ["FULL", "FULL"] if days == 2 else ["FULL"]
-        elif 3 <= days <= 4:
-            return ["PUSH", "PULL", "LEGS", "FULL"] if days == 4 else ["PUSH", "PULL", "LEGS"]
-        else:
-            full_plan = ["PUSH", "PULL", "LEGS", "UPPER", "LOWER", "FULL", "CORE"]
-            return full_plan[:days]
-
-    # RICOMPOSIZIONE CORPOREA
+        if days <= 2: return ["FULL", "FULL"] if days == 2 else ["FULL"]
+        elif 3 <= days <= 4: return ["PUSH", "PULL", "LEGS", "FULL"] if days == 4 else ["PUSH", "PULL", "LEGS"]
+        else: return ["PUSH", "PULL", "LEGS", "UPPER", "LOWER", "FULL", "CORE"][:days]
     elif goal == "ricomposizione corporea":
-        if days <= 2:
-            return ["RECOMP_FULL", "RECOMP_FULL"] if days == 2 else ["RECOMP_FULL"]
-        elif 3 <= days <= 4:
-            return ["RECOMP_UPPER", "RECOMP_LOWER", "RECOMP_FULL", "CORE"] if days == 4 else ["RECOMP_UPPER", "RECOMP_LOWER", "RECOMP_FULL"]
-        else:
-            full_plan = ["RECOMP_UPPER", "RECOMP_LOWER", "RECOMP_UPPER", "RECOMP_LOWER", "RECOMP_FULL", "CORE", "HIIT"]
-            return full_plan[:days]
-
-    # DIMAGRIMENTO / CARDIO
+        if days <= 2: return ["RECOMP_FULL", "RECOMP_FULL"] if days == 2 else ["RECOMP_FULL"]
+        elif 3 <= days <= 4: return ["RECOMP_UPPER", "RECOMP_LOWER", "RECOMP_FULL", "CORE"] if days == 4 else ["RECOMP_UPPER", "RECOMP_LOWER", "RECOMP_FULL"]
+        else: return ["RECOMP_UPPER", "RECOMP_LOWER", "RECOMP_UPPER", "RECOMP_LOWER", "RECOMP_FULL", "CORE", "HIIT"][:days]
     else:
-        if days <= 2:
-            return ["HIIT", "CARDIO"] if days == 2 else ["HIIT"]
-        elif 3 <= days <= 4:
-            return ["HIIT", "CORE", "CARDIO", "FULL"] if days == 4 else ["HIIT", "CORE", "CARDIO"]
-        else:
-            full_plan = ["HIIT", "CARDIO", "CORE", "FULL", "HIIT", "CARDIO", "CORE"]
-            return full_plan[:days]
+        if days <= 2: return ["HIIT", "CARDIO"] if days == 2 else ["HIIT"]
+        elif 3 <= days <= 4: return ["HIIT", "CORE", "CARDIO", "FULL"] if days == 4 else ["HIIT", "CORE", "CARDIO"]
+        else: return ["HIIT", "CARDIO", "CORE", "FULL", "HIIT", "CARDIO", "CORE"][:days]
 
-# =========================
-# WORKOUT BUILDER
-# =========================
+# =====================================================================
+# INTERFACCIA APPRENDIMENTO MUSCLEWIKI API
+# =====================================================================
 def build(day_type, equipment, level):
-    if equipment == "corpo libero":
-        raw_exercises = EX_BODYWEIGHT.get(day_type, [])
-    elif equipment == "casa":
-        raw_exercises = EX_HOME.get(day_type, [])
-    else:
-        raw_exercises = EX.get(day_type, [])
+    # 1. Mappatura Attrezzatura per MuscleWiki
+    eq_map = {
+        "corpo libero": "bodyweight",
+        "casa": "dumbbell",
+        "palestra": "barbell" # L'API accetta singoli filtri principali, "barbell" o "machine"
+    }
+    mw_equipment = eq_map.get(equipment, "bodyweight")
 
-    if not raw_exercises:
-        return ["riposo attivo"]
+    # 2. Mappatura Categorie -> Muscoli Specifici
+    muscle_groups = []
+    if "PUSH" in day_type or "UPPER" in day_type:
+        muscle_groups = ["chest", "shoulders", "triceps"]
+    elif "PULL" in day_type:
+        muscle_groups = ["lats", "lower_back", "biceps"]
+    elif "LEGS" in day_type or "LOWER" in day_type:
+        muscle_groups = ["quads", "hamstrings", "glutes", "calves"]
+    elif "CORE" in day_type:
+        muscle_groups = ["abs"]
+    else: # FULL, HIIT, CARDIO o fallback
+        muscle_groups = ["chest", "lats", "quads", "abs"]
 
-    return [get_volume_string(ex, level) for ex in raw_exercises]
+    # 3. Chiamata API dinamica a MuscleWiki (Endpoint localizzato in Italiano)
+    api_url = "https://api.musclewiki.com/v1/exercises"
+    headers = {
+        "Authorization": f"Bearer {MUSCLEWIKI_API_KEY}",
+        "Accept-Language": "it"
+    }
+
+    output_exercises = []
+    
+    # Interroghiamo l'API per i muscoli necessari al tipo di giornata
+    for muscle in muscle_groups[:2]: # Limitiamo a 2 gruppi muscolari principali per giornata per non saturare i testi
+        params = {
+            "muscle": muscle,
+            "equipment": mw_equipment,
+            "limit": 3
+        }
+        try:
+            res = requests.get(api_url, headers=headers, params=params, timeout=8)
+            if res.status_code == 200:
+                data = res.json()
+                # Se l'API restituisce una lista di esercizi, li formattiamo
+                for item in data.get("exercises", []):
+                    ex_name = item.get("name", "Esercizio")
+                    # Determina in automatico se è fondamentale [F] o complementare [C]
+                    ex_type = "[F]" if "panca" in ex_name.lower() or "squat" in ex_name.lower() or "stacco" in ex_name.lower() else "[C]"
+                    
+                    vol_str = get_volume_string(ex_name, ex_type, level)
+                    if vol_str not in output_exercises:
+                        output_exercises.append(vol_str)
+        except Exception as e:
+            print(f"Errore chiamata MuscleWiki: {e}")
+            break
+
+    # Fallback se l'API non risponde o non trova esercizi specifici
+    if not output_exercises:
+        return [
+            f"Squat a {equipment} 3x10", 
+            f"Spinte/Piegamenti 3x10", 
+            f"Trazioni/Rematore 3x12", 
+            f"Plank addome 3x45s"
+        ]
+
+    return output_exercises[:6] # Massimo 6 esercizi a scheda per sessione
 
 # =====================================================================
 # GENERATOR
@@ -201,7 +186,6 @@ def generate(data):
     goal = data.get("goal", "massa")
     level = data.get("level", "livello base")
     
-    # Se l'utente seleziona un focus specifico (Upper/Lower), mantiene le precedenze custom, altrimenti usa lo Split Engine
     if goal == "massa":
         if focus == "upper body":
             plans = {
@@ -236,9 +220,11 @@ def generate(data):
 Prima di scoprire la tua scheda, entra nel nostro <b>Canale Telegram Ufficiale</b> @GymMethod2026Shop dove scoviamo ogni giorno i migliori sconti Amazon su <i>creatina, proteine e attrezzi per la tua Home Gym!</i>
 
 👉 <a href="https://t.me/GymMethod2026Shop">CLICCA QUI PER ENTRARE NEL CANALE SHOP</a> 👈
+
+⚠️ <i>Nota: I prezzi e gli sconti all'interno del canale sono aggiornati costantemente ma sono da intendersi come <b>prezzi validi esclusivamente al momento dell'invio del messaggio</b>. Le promozioni di Amazon possono variare o scadere rapidamente in base alla disponibilità.</i>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🏋️ <b>IL TUO PIANO PERSONALIZZATO</b>
+🏋️ <b>IL TUO PIANO PERSONALIZZATO (Powered by MuscleWiki)</b>
 
 👤 <b>Nome:</b> {name}
 📧 <b>Email:</b> {email}
@@ -273,22 +259,18 @@ Prima di scoprire la tua scheda, entra nel nostro <b>Canale Telegram Ufficiale</
             text += f"- {ex}\n"
         text += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 
-    text += "\n⚠️ <i>Questa scheda NON sostituisce il parere di un professionista! Seguila soltanto se sei perfettamente in salute.</i>\n"
+    text += "\n⚠️ <i>Questa scheda NON sostituisce il parere di un medico! Seguila soltanto se sei perfettamente in salute.</i>\n"
     return text
 
 # =========================
 # WEBHOOK
 # =========================
-WEBHOOK_SECRET_TOKEN = os.environ.get("WEBHOOK_SECRET", "Zanzibar-secret-ostreghetta")
-
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    # CANCELLA O COMMENTA QUESTE 3 RIGHE:
-    # token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
-    # if token != WEBHOOK_SECRET_TOKEN:
-    #     return "Non autorizzato", 403
+    token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
+    if token != WEBHOOK_SECRET_TOKEN:
+        return "Non autorizzato", 403
 
-    # IL CODICE DEVE RIPARTIRE DIRETTAMENTE DA QUI:
     data = request.json
     if not data or "message" not in data:
         return "ok"
@@ -479,16 +461,16 @@ def webhook():
         return "ok"
 
     if u["step"] == 10:
-        raw = text.replace(",", " ")
+        raw = norm(raw_text).replace(",", " ")
         days_list = raw.split()
 
         for d in days_list:
             if d not in VALID_DAYS:
-                send(chat_id, f"❌ Giorno non riconosciuto: '{d}'. Riprova a elencarli tutti:")
+                send(chat_id, f"❌ Giorno non riconosciuto: '{d}'. Riprova a elencarli tutti (senza accenti, es: lunedi):")
                 return "ok"
 
         if len(set(days_list)) != len(days_list):
-            send(chat_id, "❌ Hai inserito dei giorni duplicati (es. due volte 'lunedi'). Riprova a elencarli:")
+            send(chat_id, "❌ Hai inserito dei giorni duplicati. Riprova a elencarli:")
             return "ok"
 
         if len(days_list) != u["data"]["days"]:
@@ -508,4 +490,4 @@ def webhook():
 
 @app.route("/")
 def home():
-    return "Bot attivo e pubblicità impostata su @GymMethod2026Shop"
+    return "Bot attivo e collegato a MuscleWiki API!"
